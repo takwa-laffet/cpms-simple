@@ -20,6 +20,7 @@ try:
         AuthorizationStatus,
         DataTransferStatus,
         RegistrationStatus,
+        ResetType,
     )
     from websockets.exceptions import ConnectionClosed
 
@@ -122,7 +123,7 @@ def normalize_boot_payload(payload: dict) -> dict:
             "charge_box_serialNumber",
         ],
         "firmware_version": ["firmware_version", "firmwareVersion", "firmware"],
-        "iccid": ["iccid", "ICCID"],
+            "firmware_version": ["firmware_version", "firmwareVersion", "firmware"],
         "imsi": ["imsi", "IMSI"],
         "meter_type": ["meter_type", "meterType"],
         "meter_serial_number": ["meter_serial_number", "meterSerialNumber"],
@@ -851,6 +852,49 @@ async def remote_stop(cp_id: str, transaction_id: int):
         return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "transaction_id": transaction_id})
     except Exception as error:
         LOGGER.exception("RemoteStopTransaction failed for %s: %s", cp_id, error)
+        return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)
+
+
+@app.post("/api/cp/{cp_id}/remote_reboot")
+async def remote_reboot(cp_id: str, reset_type: str = "Soft"):
+    """Send a real OCPP Reset command (reboot) to the connected charger."""
+    if not OCPP_AVAILABLE or call is None:
+        return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
+
+    cp_instance = await COLLECTOR.get_charge_point(cp_id)
+    if cp_instance is None:
+        return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
+
+    normalized_reset = (reset_type or "Soft").strip().lower()
+    ocpp_reset_type = ResetType.soft if normalized_reset != "hard" else ResetType.hard
+
+    request = call.Reset(type_=ocpp_reset_type)
+    try:
+        response = await cp_instance.call(request)
+        await COLLECTOR.record_action(cp_id, "Reset", {"reset_type": str(ocpp_reset_type), "response_status": getattr(response, "status", None)})
+        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "reset_type": str(ocpp_reset_type)})
+    except Exception as error:
+        LOGGER.exception("Reset failed for %s: %s", cp_id, error)
+        return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)
+
+
+@app.post("/api/cp/{cp_id}/unlock_connector")
+async def unlock_connector(cp_id: str, connector_id: int = 1):
+    """Send a real OCPP UnlockConnector command to the connected charger."""
+    if not OCPP_AVAILABLE or call is None:
+        return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
+
+    cp_instance = await COLLECTOR.get_charge_point(cp_id)
+    if cp_instance is None:
+        return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
+
+    request = call.UnlockConnector(connector_id=connector_id)
+    try:
+        response = await cp_instance.call(request)
+        await COLLECTOR.record_action(cp_id, "UnlockConnector", {"connector_id": connector_id, "response_status": getattr(response, "status", None)})
+        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "connector_id": connector_id})
+    except Exception as error:
+        LOGGER.exception("UnlockConnector failed for %s: %s", cp_id, error)
         return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)
 
 

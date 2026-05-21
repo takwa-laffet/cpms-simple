@@ -10,6 +10,8 @@ Minimal CPMS app that exposes charger state as JSON through a Flask API.
 - Lets you stop charging server-side with `POST /api/cp/{cp_id}/force_stop`
 - Lets you send a real OCPP remote start with `POST /api/cp/{cp_id}/remote_start`
 - Lets you send a real OCPP remote stop with `POST /api/cp/{cp_id}/remote_stop`
+- Lets you reboot the borne with `POST /api/cp/{cp_id}/remote_reboot`
+- Lets you unlock a connector with `POST /api/cp/{cp_id}/unlock_connector`
 
 
 ## Run locally
@@ -79,6 +81,18 @@ To stop a remote session:
 
 ```bash
 curl -X POST "http://127.0.0.1:5000/api/cp/CP001/remote_stop?transaction_id=1"
+```
+
+To reboot the borne:
+
+```bash
+curl -X POST "http://127.0.0.1:5000/api/cp/CP001/remote_reboot?reset_type=Soft"
+```
+
+To unlock a connector:
+
+```bash
+curl -X POST "http://127.0.0.1:5000/api/cp/CP001/unlock_connector?connector_id=1"
 ```
 
 ## Serial number of the borne
