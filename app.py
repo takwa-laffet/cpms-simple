@@ -8,8 +8,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 import uvicorn
 
 try:
@@ -52,13 +51,66 @@ STATE_FILE = DATA_DIR / "state_snapshot.json"
 BORNE_LOGS_DIR = DATA_DIR / "borne_logs"
 BORNE_LOGS_DIR.mkdir(exist_ok=True)
 META_FILE = DATA_DIR / "borne_meta.json"
-FRONTEND_DIST_DIR = Path("frontend/dist")
-FRONTEND_INDEX_FILE = FRONTEND_DIST_DIR / "index.html"
-FRONTEND_ASSETS_DIR = FRONTEND_DIST_DIR / "assets"
 
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def parse_iso_datetime(value: str | None):
+    if not value:
+        return None
+
+    try:
+        parsed = datetime.fromisoformat(value)
+    except Exception:
+        return None
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+
+    return parsed
+
+
+def normalize_transaction_id(value):
+    if value is None or isinstance(value, bool):
+        return None
+
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+
+    text_value = str(value).strip()
+    if not text_value:
+        return None
+
+    try:
+        return int(text_value)
+    except ValueError:
+        return text_value
+
+
+def normalize_energy_wh(value: float | None, unit: str | None = None) -> float | None:
+    if value is None:
+        return None
+
+    normalized_unit = (unit or "").strip().lower()
+    if normalized_unit in {"kwh", "kilowatt hour", "kilowatt-hours", "kilowatthour"}:
+        return float(value) * 1000.0
+
+    if normalized_unit in {"wh", "watt hour", "watt-hours", "watthour"}:
+        return float(value)
+
+    # Best-effort fallback for chargers that omit the unit field.
+    if value >= 1000:
+        return float(value)
+
+    if not float(value).is_integer():
+        return float(value) * 1000.0
+
+    return None
 
 
 def read_json_file(file_path: Path, default):
@@ -128,7 +180,6 @@ def normalize_boot_payload(payload: dict) -> dict:
             "charge_box_serialNumber",
         ],
         "firmware_version": ["firmware_version", "firmwareVersion", "firmware"],
-            "firmware_version": ["firmware_version", "firmwareVersion", "firmware"],
         "imsi": ["imsi", "IMSI"],
         "meter_type": ["meter_type", "meterType"],
         "meter_serial_number": ["meter_serial_number", "meterSerialNumber"],
@@ -138,7 +189,7 @@ def normalize_boot_payload(payload: dict) -> dict:
         if normalized.get(target) is not None:
             continue
         for key in keys:
-            if normalized.get(key) is not None: 
+            if normalized.get(key) is not None:
                 normalized[target] = normalized.get(key)
                 break
 
@@ -146,8 +197,8 @@ def normalize_boot_payload(payload: dict) -> dict:
 
 
 def build_sessions(events: list[dict], borne_logs: dict[str, list[dict]]) -> dict[str, list[dict]]:
-    # Build simple session summaries per cp_id using StartTransaction/StopTransaction events
-    sessions_by_cp: dict[str, dict[int, dict]] = {}
+    # Build simple session summaries per cp_id using StartTransaction/StopTransaction events.
+    sessions_by_cp: dict[str, dict[object, dict]] = {}
 
     for ev in events:
         if ev.get("event_type") != "ocpp_message":
@@ -156,18 +207,14 @@ def build_sessions(events: list[dict], borne_logs: dict[str, list[dict]]) -> dic
         action = ev.get("action")
         payload = ev.get("payload") or {}
 
-        if cp_id not in sessions_by_cp:
-            sessions_by_cp[cp_id] = {}
+        cp_sessions = sessions_by_cp.setdefault(cp_id, {})
 
         if action == "StartTransaction":
-            tx = payload.get("transaction_id") or payload.get("transactionId") or None
-            # If start transaction id is not present, use collector-assigned id in payload
-            tx_id = tx if tx is not None else payload.get("transaction_id")
+            tx_id = normalize_transaction_id(payload.get("transaction_id") or payload.get("transactionId"))
             if tx_id is None:
-                # fallback: use internal open transactions if any
-                tx_id = payload.get("transactionId")
+                tx_id = f"{cp_id}:{ev.get('timestamp')}:{payload.get('connector_id') or 'unknown'}"
 
-            sessions_by_cp[cp_id][tx_id] = {
+            cp_sessions[tx_id] = {
                 "session_id": tx_id,
                 "start": ev.get("timestamp"),
                 "connector_id": payload.get("connector_id"),
@@ -177,13 +224,24 @@ def build_sessions(events: list[dict], borne_logs: dict[str, list[dict]]) -> dic
             }
 
         if action == "StopTransaction":
-            tx_id = payload.get("transaction_id") or payload.get("transactionId")
-            if tx_id is None:
-                continue
-            sess = sessions_by_cp.get(cp_id, {}).get(tx_id)
+            tx_id = normalize_transaction_id(payload.get("transaction_id") or payload.get("transactionId"))
+            sess = cp_sessions.get(tx_id) if tx_id is not None else None
+
+            if sess is None and tx_id is None:
+                connector_id = payload.get("connector_id")
+                for existing_tx_id, candidate in reversed(list(cp_sessions.items())):
+                    if candidate.get("end") is not None:
+                        continue
+                    if connector_id is None or candidate.get("connector_id") == connector_id:
+                        sess = candidate
+                        tx_id = existing_tx_id
+                        break
+
             if sess is None:
-                # create partial session if missing
-                sessions_by_cp.setdefault(cp_id, {})[tx_id] = {
+                if tx_id is None:
+                    tx_id = f"{cp_id}:stop:{ev.get('timestamp')}:{payload.get('connector_id') or 'unknown'}"
+
+                cp_sessions[tx_id] = {
                     "session_id": tx_id,
                     "start": None,
                     "end": ev.get("timestamp"),
@@ -202,7 +260,7 @@ def build_sessions(events: list[dict], borne_logs: dict[str, list[dict]]) -> dic
             # look for meter values entries and attach to session by transaction_id
             if entry.get("event_type") == "ocpp_message" and entry.get("action") == "MeterValues":
                 payload = entry.get("payload", {})
-                tx = payload.get("transaction_id") or payload.get("transactionId")
+                tx = normalize_transaction_id(payload.get("transaction_id") or payload.get("transactionId"))
                 if tx is None:
                     # try to attach by time proximity: skip for now
                     continue
@@ -214,7 +272,11 @@ def build_sessions(events: list[dict], borne_logs: dict[str, list[dict]]) -> dic
     result: dict[str, list[dict]] = {}
     for cp_id, txs in sessions_by_cp.items():
         result[cp_id] = []
-        for tx_id, s in txs.items():
+        ordered_sessions = sorted(
+            txs.values(),
+            key=lambda session: parse_iso_datetime(session.get("start")) or parse_iso_datetime(session.get("end")) or datetime.min.replace(tzinfo=timezone.utc),
+        )
+        for s in ordered_sessions:
             start = s.get("start")
             end = s.get("end")
             meter_start = s.get("meter_start")
@@ -223,17 +285,12 @@ def build_sessions(events: list[dict], borne_logs: dict[str, list[dict]]) -> dic
             duration = None
             try:
                 if meter_start is not None and meter_stop is not None:
-                    energy = (meter_stop - meter_start) / 1000.0
+                    energy = (float(meter_stop) - float(meter_start)) / 1000.0
                 if start and end:
-                    from datetime import datetime
-                    fmt = None
-                    try:
-                        # ISO parse
-                        start_dt = datetime.fromisoformat(start)
-                        end_dt = datetime.fromisoformat(end)
+                    start_dt = parse_iso_datetime(start)
+                    end_dt = parse_iso_datetime(end)
+                    if start_dt is not None and end_dt is not None:
                         duration = (end_dt - start_dt).total_seconds()
-                    except Exception:
-                        duration = None
             except Exception:
                 energy = None
 
@@ -266,9 +323,18 @@ def parse_meter_payload(payload: dict) -> list[dict]:
     for mv in meter_values:
         ts = mv.get("timestamp")
         sampled = mv.get("sampled_value") or mv.get("sampledValue") or []
-        entry = {"timestamp": ts, "energy_wh": None, "power_w": None, "current_a": None, "voltage_v": None}
+        entry = {
+            "timestamp": ts,
+            "energy_wh": None,
+            "energy_value": None,
+            "energy_unit": None,
+            "power_w": None,
+            "current_a": None,
+            "voltage_v": None,
+        }
         for sv in sampled:
             meas = sv.get("measurand") or sv.get("measurand")
+            unit = sv.get("unit") or sv.get("Unit")
             val = sv.get("value")
             if val is None:
                 continue
@@ -279,9 +345,9 @@ def parse_meter_payload(payload: dict) -> list[dict]:
 
             # detect energy cumulative
             if meas and "Energy" in meas:
-                # assume value in Wh or kWh? many chargers report Wh in Wh or in kWh; try to guess
-                # if value > 10000 assume Wh, else if < 1000 assume Wh too; best effort: if value > 1e6 treat as Wh
-                entry["energy_wh"] = num if num > 1000 else num * 1000 if num < 1 else num * 1000
+                entry["energy_value"] = num
+                entry["energy_unit"] = unit
+                entry["energy_wh"] = normalize_energy_wh(num, unit)
             elif meas and ("Power" in meas or meas.lower().startswith("power")):
                 entry["power_w"] = num
             elif meas and ("Current" in meas or meas.lower().startswith("current")):
@@ -296,25 +362,18 @@ def parse_meter_payload(payload: dict) -> list[dict]:
 
 def aggregate_session_meter_values(session: dict, borne_log_entries: list[dict]) -> dict:
     """Aggregate meter readings for a single session into minute buckets and compute KPIs."""
-    from datetime import datetime, timezone, timedelta
+    from datetime import timedelta
 
     start = session.get("start")
     end = session.get("end")
     if not start:
         return session
 
-    try:
-        start_dt = datetime.fromisoformat(start)
-    except Exception:
+    start_dt = parse_iso_datetime(start)
+    if start_dt is None:
         return session
 
-    if end:
-        try:
-            end_dt = datetime.fromisoformat(end)
-        except Exception:
-            end_dt = None
-    else:
-        end_dt = None
+    end_dt = parse_iso_datetime(end) if end else None
 
     # collect readings matching this session: by transaction id or by timestamp range
     tx = session.get("session_id")
@@ -326,19 +385,16 @@ def aggregate_session_meter_values(session: dict, borne_log_entries: list[dict])
             continue
         payload = entry.get("payload") or {}
         # check transaction id
-        tx_id = payload.get("transaction_id") or payload.get("transactionId")
+        tx_id = normalize_transaction_id(payload.get("transaction_id") or payload.get("transactionId"))
         entry_ts = payload.get("timestamp") or payload.get("ts")
         if tx is not None and tx_id is not None and str(tx_id) == str(tx):
             readings.extend(parse_meter_payload(payload))
         else:
             # if timestamp within session range, include
             if entry_ts:
-                try:
-                    entry_dt = datetime.fromisoformat(entry_ts)
-                    if entry_dt >= start_dt and (end_dt is None or entry_dt <= end_dt):
-                        readings.extend(parse_meter_payload(payload))
-                except Exception:
-                    continue
+                entry_dt = parse_iso_datetime(entry_ts)
+                if entry_dt is not None and entry_dt >= start_dt and (end_dt is None or entry_dt <= end_dt):
+                    readings.extend(parse_meter_payload(payload))
 
     if not readings:
         session["charge_curve"] = []
@@ -347,10 +403,7 @@ def aggregate_session_meter_values(session: dict, borne_log_entries: list[dict])
 
     # sort readings by timestamp
     def parse_ts(r):
-        try:
-            return datetime.fromisoformat(r.get("timestamp"))
-        except Exception:
-            return None
+        return parse_iso_datetime(r.get("timestamp"))
 
     readings = [r for r in readings if parse_ts(r) is not None]
     readings.sort(key=lambda r: parse_ts(r))
@@ -397,7 +450,7 @@ def aggregate_session_meter_values(session: dict, borne_log_entries: list[dict])
 
     # build minute buckets
     if end_dt is None:
-        end_dt = readings[-1] and parse_ts(readings[-1])
+        end_dt = parse_ts(readings[-1])
     if end_dt is None:
         session["charge_curve"] = []
         session["kpis"] = {"total_kwh": energy_kwh, "peak_kw": peak_power_w / 1000.0 if peak_power_w else None, "avg_kw": None}
@@ -712,46 +765,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-if FRONTEND_ASSETS_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=FRONTEND_ASSETS_DIR), name="assets")
 
-
-@app.get("/dashboard", response_class=HTMLResponse)
-def dashboard():
-    dashboard_file = Path("dashboard.html")
-    if dashboard_file.exists():
-        return HTMLResponse(dashboard_file.read_text(encoding="utf-8"))
-    return HTMLResponse("<h1>dashboard.html not found</h1>", status_code=404)
-
-
-@app.get("/tests", response_class=HTMLResponse)
-def tests_page():
-    tests_file = Path("tests.html")
-    if tests_file.exists():
-        return HTMLResponse(tests_file.read_text(encoding="utf-8"))
-    return HTMLResponse("<h1>tests.html not found</h1>", status_code=404)
-
-
-@app.get("/", response_class=HTMLResponse)
-def root_dashboard():
-    if FRONTEND_INDEX_FILE.exists():
-        return HTMLResponse(FRONTEND_INDEX_FILE.read_text(encoding="utf-8"))
-    return dashboard()
-
-
-@app.get("/{path:path}", response_class=HTMLResponse)
-def spa_fallback(path: str):
-    if path.startswith("api/"):
-        return HTMLResponse("<h1>Not Found</h1>", status_code=404)
-
-    static_path = FRONTEND_DIST_DIR / path
-    if static_path.is_file():
-        return HTMLResponse(static_path.read_text(encoding="utf-8"))
-
-    if FRONTEND_INDEX_FILE.exists() and "." not in Path(path).name:
-        return HTMLResponse(FRONTEND_INDEX_FILE.read_text(encoding="utf-8"))
-
-    return HTMLResponse("<h1>Not Found</h1>", status_code=404)
+@app.get("/")
+def root_health():
+    return JSONResponse(
+        {
+            "status": "ok",
+            "service": "cpms-simple backend",
+            "api": "/api/cp",
+        }
+    )
 
 
 @app.get("/api/cp")
@@ -1036,8 +1059,12 @@ if OCPP_AVAILABLE:
                 "timestamp": timestamp,
                 **kwargs,
             }
-            await COLLECTOR.record_action(self.id, "StartTransaction", payload)
             transaction_id = await COLLECTOR.start_transaction(self.id, payload)
+            await COLLECTOR.record_action(
+                self.id,
+                "StartTransaction",
+                {**payload, "transaction_id": transaction_id},
+            )
             return call_result.StartTransaction(
                 transaction_id=transaction_id,
                 id_tag_info={"status": AuthorizationStatus.accepted},
@@ -1125,8 +1152,6 @@ if OCPP_AVAILABLE:
         finally:
             await COLLECTOR.unregister_charge_point(cp_id)
             await COLLECTOR.register_disconnection(cp_id)
-
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     uvicorn.run("app:app", host="0.0.0.0", port=port, log_level="info")

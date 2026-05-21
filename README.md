@@ -1,9 +1,10 @@
 # CPMS Simple
 
-Minimal CPMS app that exposes charger state as JSON through a Flask API.
+Minimal CPMS backend that exposes charger state as JSON through a FastAPI API.
 
 ## What it does
 
+- Exposes a backend health response at `GET /`
 - Exposes charger state and sessions at `GET /api/cp`
 - Lets you set charger metadata at `GET/POST /api/cp/{cp_id}/meta`
 - Lets you start charging server-side with `POST /api/cp/{cp_id}/force_start`
