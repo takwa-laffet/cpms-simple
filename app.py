@@ -7,7 +7,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 try:
@@ -50,6 +52,9 @@ STATE_FILE = DATA_DIR / "state_snapshot.json"
 BORNE_LOGS_DIR = DATA_DIR / "borne_logs"
 BORNE_LOGS_DIR.mkdir(exist_ok=True)
 META_FILE = DATA_DIR / "borne_meta.json"
+FRONTEND_DIST_DIR = Path("frontend/dist")
+FRONTEND_INDEX_FILE = FRONTEND_DIST_DIR / "index.html"
+FRONTEND_ASSETS_DIR = FRONTEND_DIST_DIR / "assets"
 
 
 def utc_now_iso() -> str:
@@ -698,6 +703,55 @@ class DataCollector:
 
 COLLECTOR = DataCollector()
 app = FastAPI()
+cors_origins = [origin.strip() for origin in os.environ.get("CORS_ORIGINS", "*").split(",") if origin.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins if cors_origins != ["*"] else ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+if FRONTEND_ASSETS_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_ASSETS_DIR), name="assets")
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard():
+    dashboard_file = Path("dashboard.html")
+    if dashboard_file.exists():
+        return HTMLResponse(dashboard_file.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>dashboard.html not found</h1>", status_code=404)
+
+
+@app.get("/tests", response_class=HTMLResponse)
+def tests_page():
+    tests_file = Path("tests.html")
+    if tests_file.exists():
+        return HTMLResponse(tests_file.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>tests.html not found</h1>", status_code=404)
+
+
+@app.get("/", response_class=HTMLResponse)
+def root_dashboard():
+    if FRONTEND_INDEX_FILE.exists():
+        return HTMLResponse(FRONTEND_INDEX_FILE.read_text(encoding="utf-8"))
+    return dashboard()
+
+
+@app.get("/{path:path}", response_class=HTMLResponse)
+def spa_fallback(path: str):
+    if path.startswith("api/"):
+        return HTMLResponse("<h1>Not Found</h1>", status_code=404)
+
+    static_path = FRONTEND_DIST_DIR / path
+    if static_path.is_file():
+        return HTMLResponse(static_path.read_text(encoding="utf-8"))
+
+    if FRONTEND_INDEX_FILE.exists() and "." not in Path(path).name:
+        return HTMLResponse(FRONTEND_INDEX_FILE.read_text(encoding="utf-8"))
+
+    return HTMLResponse("<h1>Not Found</h1>", status_code=404)
 
 
 @app.get("/api/cp")
