@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CPMS Simple Dashboard</title>
+    <meta
+      name="description"
+      content="CPMS Simple dashboard for monitoring OCPP charge points and sending remote commands."
+    />
+    <link rel="stylesheet" href="/frontend/styles.css" />
+    <script defer src="/frontend/app.js"></script>
+  </head>
+  <body>
+    <div class="bg-orb bg-orb-a"></div>
+    <div class="bg-orb bg-orb-b"></div>
+
+    <header class="shell header">
+      <div>
+        <p class="eyebrow">CPMS Simple</p>
+        <h1>Charge Point Control Center</h1>
+        <p class="lede">
+          Monitor OCPP chargers, inspect sessions, and trigger remote actions from one lightweight backend dashboard.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button id="refresh-btn" class="btn btn-secondary" type="button">Refresh</button>
+        <a class="btn btn-primary" href="/health" target="_blank" rel="noreferrer">Backend Health</a>
+      </div>
+    </header>
+
+    <main class="shell layout">
+      <section class="panel hero">
+        <div class="hero-top">
+          <div>
+            <p class="section-label">Fleet Overview</p>
+            <div class="status-row">
+              <span id="global-status" class="status-dot status-unknown"></span>
+              <span id="global-status-text">Loading backend data...</span>
+            </div>
+          </div>
+          <div class="meta-chip">
+            <span>Selected CP</span>
+            <strong id="selected-cp-label">-</strong>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card">
+            <span>Active Connections</span>
+            <strong id="metric-active-connections">0</strong>
+          </article>
+          <article class="stat-card">
+            <span>Total Messages</span>
+            <strong id="metric-total-messages">0</strong>
+          </article>
+          <article class="stat-card">
+            <span>Total Energy</span>
+            <strong id="metric-total-energy">0.00 kWh</strong>
+          </article>
+          <article class="stat-card">
+            <span>Open Transactions</span>
+            <strong id="metric-open-transactions">0</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel sidebar">
+        <div class="panel-head">
+          <div>
+            <p class="section-label">Charge Points</p>
+            <h2>Fleet</h2>
+          </div>
+          <span id="fleet-count" class="badge">0 CPs</span>
+        </div>
+        <div id="cp-list" class="cp-list"></div>
+      </section>
+
+      <section class="panel detail">
+        <div class="panel-head">
+          <div>
+            <p class="section-label">Selected Charge Point</p>
+            <h2 id="detail-title">Choose a charge point</h2>
+          </div>
+          <span id="detail-status" class="badge badge-neutral">Idle</span>
+        </div>
+
+        <div class="detail-grid">
+          <div class="card">
+            <h3>General Info</h3>
+            <dl id="general-info" class="kv-list"></dl>
+          </div>
+
+          <div class="card">
+            <h3>Live State</h3>
+            <dl id="live-state" class="kv-list"></dl>
+          </div>
+
+          <div class="card full-span">
+            <div class="panel-head slim">
+              <h3>Remote Commands</h3>
+              <span class="note">Uses the existing backend API</span>
+            </div>
+
+            <div class="command-grid">
+              <form id="force-start-form" class="command-card">
+                <h4>Force Start</h4>
+                <label>Connector ID <input name="connector_id" type="number" min="1" value="1" /></label>
+                <label>Meter Start <input name="meter_start" type="number" min="0" value="0" /></label>
+                <button class="btn btn-primary" type="submit">Start</button>
+              </form>
+
+              <form id="force-stop-form" class="command-card">
+                <h4>Force Stop</h4>
+                <label>Transaction ID <input name="transaction_id" type="number" min="1" placeholder="1" /></label>
+                <label>Meter Stop <input name="meter_stop" type="number" min="0" value="0" /></label>
+                <button class="btn btn-primary" type="submit">Stop</button>
+              </form>
+
+              <form id="remote-start-form" class="command-card">
+                <h4>Remote Start</h4>
+                <label>Connector ID <input name="connector_id" type="number" min="1" placeholder="1" /></label>
+                <label>id_tag <input name="id_tag" type="text" placeholder="REMOTE_START" /></label>
+                <button class="btn btn-primary" type="submit">Send</button>
+              </form>
+
+              <form id="remote-stop-form" class="command-card">
+                <h4>Remote Stop</h4>
+                <label>Transaction ID <input name="transaction_id" type="number" min="1" placeholder="1" /></label>
+                <button class="btn btn-primary" type="submit">Send</button>
+              </form>
+
+              <form id="remote-reboot-form" class="command-card">
+                <h4>Reboot</h4>
+                <label>
+                  Reset Type
+                  <select name="reset_type">
+                    <option value="Soft">Soft</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </label>
+                <button class="btn btn-warning" type="submit">Reboot</button>
+              </form>
+
+              <form id="unlock-form" class="command-card">
+                <h4>Unlock Connector</h4>
+                <label>Connector ID <input name="connector_id" type="number" min="1" placeholder="1" /></label>
+                <button class="btn btn-warning" type="submit">Unlock</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="panel-head slim">
+              <h3>Sessions</h3>
+              <span class="note">Derived from Start/StopTransaction</span>
+            </div>
+            <div id="session-list" class="timeline"></div>
+          </div>
+
+          <div class="card">
+            <div class="panel-head slim">
+              <h3>Recent Events</h3>
+              <span class="note">Newest first</span>
+            </div>
+            <div id="event-list" class="timeline"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <template id="cp-item-template">
+      <button class="cp-item" type="button">
+        <div>
+          <strong class="cp-item-id"></strong>
+          <p class="cp-item-subtitle"></p>
+        </div>
+        <span class="badge badge-neutral cp-item-badge"></span>
+      </button>
+    </template>
+
+    <template id="timeline-item-template">
+      <article class="timeline-item">
+        <div class="timeline-item-head">
+          <strong class="timeline-title"></strong>
+          <span class="timeline-time"></span>
+        </div>
+        <p class="timeline-body"></p>
+      </article>
+    </template>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+  </body>
+</html>

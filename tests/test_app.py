@@ -18,12 +18,24 @@ class AppSmokeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(app)
 
-    def test_root_health(self) -> None:
+    def test_root_serves_frontend(self) -> None:
         response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("CPMS Simple Dashboard", response.text)
+
+    def test_health_endpoint(self) -> None:
+        response = self.client.get("/health")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "ok")
         self.assertEqual(response.json()["api"], "/api/cp")
+
+    def test_frontend_script_is_served(self) -> None:
+        response = self.client.get("/frontend/app.js")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("const state", response.text)
 
     def test_api_cp_returns_snapshot(self) -> None:
         response = self.client.get("/api/cp")
@@ -208,6 +220,37 @@ class SessionAndEnergyTests(unittest.TestCase):
         self.assertEqual(enriched["kpis"]["total_kwh"], 4.0)
         self.assertEqual(enriched["kpis"]["peak_kw"], 7.0)
         self.assertGreater(len(enriched["charge_curve"]), 0)
+
+
+class _FakeChargePointWebSocket:
+    def __init__(self, *_args, **_kwargs) -> None:
+        pass
+
+    async def start(self) -> None:
+        return None
+
+
+class WebSocketHandshakeTests(unittest.TestCase):
+    def test_charge_point_websocket_accepts_ocpp_subprotocol(self) -> None:
+        with patch.object(app_module, "ChargePoint", _FakeChargePointWebSocket), patch.object(
+            app_module.COLLECTOR,
+            "register_connection",
+            AsyncMock(),
+        ), patch.object(
+            app_module.COLLECTOR,
+            "register_charge_point",
+            AsyncMock(),
+        ), patch.object(
+            app_module.COLLECTOR,
+            "unregister_charge_point",
+            AsyncMock(),
+        ), patch.object(
+            app_module.COLLECTOR,
+            "register_disconnection",
+            AsyncMock(),
+        ):
+            with TestClient(app).websocket_connect("/CP001", subprotocols=["ocpp1.6"] ) as websocket:
+                self.assertEqual(websocket.accepted_subprotocol, "ocpp1.6")
 
 
 if __name__ == "__main__":

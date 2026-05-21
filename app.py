@@ -8,7 +8,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 try:
@@ -51,6 +52,8 @@ STATE_FILE = DATA_DIR / "state_snapshot.json"
 BORNE_LOGS_DIR = DATA_DIR / "borne_logs"
 BORNE_LOGS_DIR.mkdir(exist_ok=True)
 META_FILE = DATA_DIR / "borne_meta.json"
+FRONTEND_DIR = Path("frontend")
+FRONTEND_INDEX_FILE = FRONTEND_DIR / "index.html"
 
 
 def utc_now_iso() -> str:
@@ -765,9 +768,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+if FRONTEND_DIR.exists():
+    app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
+
+
+@app.get("/health")
+def health():
+    return JSONResponse(
+        {
+            "status": "ok",
+            "service": "cpms-simple backend",
+            "api": "/api/cp",
+        }
+    )
+
 
 @app.get("/")
-def root_health():
+def root():
+    if FRONTEND_INDEX_FILE.exists():
+        return HTMLResponse(FRONTEND_INDEX_FILE.read_text(encoding="utf-8"))
+
     return JSONResponse(
         {
             "status": "ok",
@@ -1133,10 +1153,22 @@ if OCPP_AVAILABLE:
 
     @app.websocket("/{cp_id}")
     async def cpms_websocket(cp_id: str, websocket: WebSocket):
-        await websocket.accept()
+        offered_subprotocols = list(websocket.scope.get("subprotocols") or [])
+        selected_subprotocol = None
+        for candidate in ("ocpp1.6", "ocpp1.5"):
+            if candidate in offered_subprotocols:
+                selected_subprotocol = candidate
+                break
+
+        await websocket.accept(subprotocol=selected_subprotocol)
         remote = websocket.client
         path = websocket.url.path if hasattr(websocket, "url") else f"/{cp_id}"
-        LOGGER.info("New charger connected: %s from %s", cp_id, remote)
+        LOGGER.info(
+            "New charger connected: %s from %s subprotocol=%s",
+            cp_id,
+            remote,
+            selected_subprotocol,
+        )
         await COLLECTOR.register_connection(cp_id, str(remote), path)
 
         adapter = ASGIWebSocketAdapter(websocket)

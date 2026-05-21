@@ -4,7 +4,8 @@ Minimal CPMS backend that exposes charger state as JSON through a FastAPI API.
 
 ## What it does
 
-- Exposes a backend health response at `GET /`
+- Serves a dashboard frontend at `GET /`
+- Exposes a backend health response at `GET /health`
 - Exposes charger state and sessions at `GET /api/cp`
 - Lets you set charger metadata at `GET/POST /api/cp/{cp_id}/meta`
 - Lets you start charging server-side with `POST /api/cp/{cp_id}/force_start`
@@ -23,6 +24,12 @@ python app.py
 ```
 
 Then open:
+
+```text
+http://127.0.0.1:5000/
+```
+
+The API snapshot remains available at:
 
 ```text
 http://127.0.0.1:5000/api/cp
@@ -60,6 +67,12 @@ The application accepts OCPP websocket connections on the same ASGI server. When
 ```text
 wss://<your-service>.onrender.com/<borne_id>
 ```
+
+Important:
+
+- The simulator app appends the Charge Point ID to the base websocket URL.
+- Use a trailing slash in the base URL, for example `wss://cpms-simple.onrender.com/`.
+- Do not enter only `wss://cpms-simple.onrender.com` without the slash, or the simulator will build an invalid URL and the socket will close with code `1006`.
 
 ## Remote start charging
 
@@ -120,6 +133,7 @@ curl -X POST "http://127.0.0.1:5000/api/cp/CP001/meta" \
 
 ## Files
 
-- `app.py`: Flask app and CPMS data collector
+- `app.py`: FastAPI app, CPMS data collector, and frontend static serving
+- `frontend/`: dashboard HTML, CSS, and client-side API logic
 - `requirements.txt`: Python dependencies
 - `cpms_data/`: generated JSON logs and snapshots
