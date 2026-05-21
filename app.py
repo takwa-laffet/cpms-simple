@@ -52,6 +52,81 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def read_json_file(file_path: Path, default):
+    if not file_path.exists():
+        return default
+
+    try:
+        data = json.loads(file_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return default
+
+    return data if data is not None else default
+
+
+def read_jsonl_file(file_path: Path) -> list[dict]:
+    if not file_path.exists():
+        return []
+
+    items = []
+    try:
+        for line in file_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                items.append(json.loads(line))
+            except json.JSONDecodeError:
+                items.append({"_raw": line, "_invalid_json": True})
+    except OSError:
+        return []
+
+    return items
+
+
+def read_borne_logs() -> dict[str, list[dict]]:
+    logs = {}
+    if not BORNE_LOGS_DIR.exists():
+        return logs
+
+    for log_file in sorted(BORNE_LOGS_DIR.glob("*.json")):
+        logs[log_file.stem] = read_json_file(log_file, [])
+
+    return logs
+
+
+def build_cp_payload() -> dict:
+    snapshot = read_json_file(STATE_FILE, {
+        "generated_at": utc_now_iso(),
+        "server_started_at": COLLECTOR.server_started_at,
+        "metrics": {
+            "total_connections": COLLECTOR.total_connections,
+            "active_connections": len(COLLECTOR.active_connections),
+            "total_messages": COLLECTOR.total_messages,
+        },
+        "message_count_by_action": dict(COLLECTOR.message_count_by_action),
+        "message_count_by_cp": dict(COLLECTOR.message_count_by_cp),
+        "last_seen": COLLECTOR.last_seen,
+        "status_by_cp": COLLECTOR.status_by_cp,
+        "last_meter_values_by_cp": COLLECTOR.last_meter_values_by_cp,
+        "open_transactions_by_cp": COLLECTOR.open_transactions_by_cp,
+    })
+
+    payload = {
+        "snapshot": snapshot,
+        "events": read_jsonl_file(EVENTS_FILE),
+        "borne_logs": read_borne_logs(),
+        "files": {
+            "events_jsonl": str(EVENTS_FILE),
+            "state_snapshot": str(STATE_FILE),
+            "borne_logs_dir": str(BORNE_LOGS_DIR),
+        },
+    }
+
+    payload.update(snapshot)
+    return payload
+
+
 class DataCollector:
     def __init__(self) -> None:
         self._lock = asyncio.Lock()
@@ -200,27 +275,46 @@ app = FastAPI()
 
 
 @app.get("/api/cp")
-def get_cp_state():
-    if STATE_FILE.exists():
-        return JSONResponse(json.loads(STATE_FILE.read_text(encoding="utf-8")))
+def get_cp_state(cp_id: str | None = None):
+    payload = build_cp_payload()
 
-    return JSONResponse(
-        {
-            "generated_at": utc_now_iso(),
-            "server_started_at": COLLECTOR.server_started_at,
-            "metrics": {
-                "total_connections": COLLECTOR.total_connections,
-                "active_connections": len(COLLECTOR.active_connections),
-                "total_messages": COLLECTOR.total_messages,
-            },
-            "message_count_by_action": dict(COLLECTOR.message_count_by_action),
-            "message_count_by_cp": dict(COLLECTOR.message_count_by_cp),
-            "last_seen": COLLECTOR.last_seen,
-            "status_by_cp": COLLECTOR.status_by_cp,
-            "last_meter_values_by_cp": COLLECTOR.last_meter_values_by_cp,
-            "open_transactions_by_cp": COLLECTOR.open_transactions_by_cp,
+    if not cp_id:
+        return JSONResponse(payload)
+
+    filtered_events = [event for event in payload["events"] if event.get("cp_id") == cp_id]
+    filtered_borne_logs = {cp_id: payload["borne_logs"].get(cp_id, [])}
+
+    filtered_payload = dict(payload)
+    filtered_payload["events"] = filtered_events
+    filtered_payload["borne_logs"] = filtered_borne_logs
+    filtered_payload["selected_cp_id"] = cp_id
+
+    if "message_count_by_cp" in filtered_payload:
+        filtered_payload["message_count_by_cp"] = {
+            cp_id: filtered_payload["message_count_by_cp"].get(cp_id, 0)
         }
-    )
+
+    if "last_seen" in filtered_payload:
+        filtered_payload["last_seen"] = {
+            cp_id: filtered_payload["last_seen"].get(cp_id)
+        }
+
+    if "status_by_cp" in filtered_payload:
+        filtered_payload["status_by_cp"] = {
+            cp_id: filtered_payload["status_by_cp"].get(cp_id)
+        }
+
+    if "last_meter_values_by_cp" in filtered_payload:
+        filtered_payload["last_meter_values_by_cp"] = {
+            cp_id: filtered_payload["last_meter_values_by_cp"].get(cp_id)
+        }
+
+    if "open_transactions_by_cp" in filtered_payload:
+        filtered_payload["open_transactions_by_cp"] = {
+            cp_id: filtered_payload["open_transactions_by_cp"].get(cp_id)
+        }
+
+    return JSONResponse(filtered_payload)
 
 
 if OCPP_AVAILABLE:
@@ -339,50 +433,46 @@ if OCPP_AVAILABLE:
             return call_result.FirmwareStatusNotification()
 
 
-    async def on_connect(websocket, path=None):
-        if path is None:
-            request = getattr(websocket, "request", None)
-            path = getattr(request, "path", "/")
+    class ASGIWebSocketAdapter:
+        def __init__(self, websocket):
+            self._ws = websocket
+            # expose a similar attribute used elsewhere
+            self.remote_address = websocket.client
 
-        charge_point_id = path.split("/")[-1]
-        remote_address = str(websocket.remote_address)
-        LOGGER.info("New charger connected: %s from %s", charge_point_id, remote_address)
-        await COLLECTOR.register_connection(charge_point_id, remote_address, path)
+        async def send(self, message: str) -> None:
+            await self._ws.send_text(message)
 
-        cp_instance = ChargePoint(charge_point_id, websocket)
+        async def recv(self) -> str:
+            # receive_text will raise WebSocketDisconnect when closed
+            data = await self._ws.receive_text()
+            return data
+
+        async def close(self) -> None:
+            await self._ws.close()
+
+
+    from fastapi import WebSocket, WebSocketDisconnect
+
+
+    @app.websocket("/{cp_id}")
+    async def cpms_websocket(cp_id: str, websocket: WebSocket):
+        await websocket.accept()
+        remote = websocket.client
+        path = websocket.url.path if hasattr(websocket, "url") else f"/{cp_id}"
+        LOGGER.info("New charger connected: %s from %s", cp_id, remote)
+        await COLLECTOR.register_connection(cp_id, str(remote), path)
+
+        adapter = ASGIWebSocketAdapter(websocket)
+        cp_instance = ChargePoint(cp_id, adapter)
 
         try:
             await cp_instance.start()
-        except ConnectionClosed as error:
-            LOGGER.warning("Connection closed for %s: %s", charge_point_id, error)
+        except WebSocketDisconnect:
+            LOGGER.info("WebSocket disconnect for %s", cp_id)
         except Exception as error:
-            LOGGER.exception("Unexpected error for %s: %s", charge_point_id, error)
+            LOGGER.exception("Unexpected error for %s: %s", cp_id, error)
         finally:
-            await COLLECTOR.register_disconnection(charge_point_id)
-
-    WS_SERVER = None
-
-    @app.on_event("startup")
-    async def startup_ws():
-        nonlocal_ws = {}
-        global WS_SERVER
-        try:
-            port = int(os.environ.get("WS_PORT", "9000"))
-            WS_SERVER = await websockets.serve(on_connect, "0.0.0.0", port)
-            LOGGER.info("OCPP websocket server started on ws://0.0.0.0:%d/", port)
-        except Exception as e:
-            LOGGER.exception("Failed to start OCPP websocket server: %s", e)
-
-    @app.on_event("shutdown")
-    async def shutdown_ws():
-        global WS_SERVER
-        if WS_SERVER is not None:
-            try:
-                WS_SERVER.close()
-                await WS_SERVER.wait_closed()
-                LOGGER.info("OCPP websocket server stopped")
-            except Exception:
-                LOGGER.exception("Error while stopping websocket server")
+            await COLLECTOR.register_disconnection(cp_id)
 
 
 if __name__ == "__main__":

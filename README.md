@@ -24,12 +24,10 @@ http://127.0.0.1:5000/api/cp
 
 WebSocket (OCPP) server (optional):
 
-The application will start an OCPP websocket server automatically when the `ocpp` and `websockets` packages are installed. By default it listens on port `9000` (env `WS_PORT`).
-
-Example local websocket URL:
+The application accepts OCPP websocket connections on the same ASGI server. When `ocpp` is installed, connect chargers to:
 
 ```text
-ws://127.0.0.1:9000/<borne_id>
+wss://<your-service>.onrender.com/<borne_id>
 ```
 
 ## Render deploy
