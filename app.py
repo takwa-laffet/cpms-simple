@@ -14,6 +14,7 @@ try:
     import websockets
     from ocpp.routing import on  # pyright: ignore[reportMissingImports]
     from ocpp.v16 import ChargePoint as cp  # pyright: ignore[reportMissingImports]
+    from ocpp.v16 import call  # pyright: ignore[reportMissingImports]
     from ocpp.v16 import call_result  # pyright: ignore[reportMissingImports]
     from ocpp.v16.enums import (  # pyright: ignore[reportMissingImports]
         AuthorizationStatus,
@@ -27,6 +28,7 @@ except ImportError:
     websockets = None
     on = None
     cp = object
+    call = None
     call_result = None
     AuthorizationStatus = None
     DataTransferStatus = None
@@ -413,6 +415,7 @@ def build_cp_payload() -> dict:
         "last_seen": COLLECTOR.last_seen,
         "status_by_cp": COLLECTOR.status_by_cp,
         "last_meter_values_by_cp": COLLECTOR.last_meter_values_by_cp,
+        "boot_notifications_by_cp": COLLECTOR.boot_notifications_by_cp,
         "open_transactions_by_cp": COLLECTOR.open_transactions_by_cp,
     })
 
@@ -430,6 +433,40 @@ def build_cp_payload() -> dict:
     # add metadata and sessions
     meta = read_meta()
     payload["metadata"] = meta
+
+    # expose serial number and boot data at the top level for convenience
+    payload["boot_notifications_by_cp"] = snapshot.get("boot_notifications_by_cp", {})
+    payload["serial_number_by_cp"] = {}
+    for cp_id, boot in payload["boot_notifications_by_cp"].items():
+        serial = (
+            boot.get("serial_number")
+            or boot.get("charge_box_serial_number")
+            or boot.get("charge_point_serial_number")
+            or meta.get(cp_id, {}).get("serialNumber")
+            or meta.get(cp_id, {}).get("serial_number")
+        )
+        payload["serial_number_by_cp"][cp_id] = serial
+
+    payload["general_info_by_cp"] = {}
+    for cp_id in set(list(meta.keys()) + list(payload["boot_notifications_by_cp"].keys())):
+        boot = payload["boot_notifications_by_cp"].get(cp_id, {})
+        m = meta.get(cp_id, {})
+        payload["general_info_by_cp"][cp_id] = {
+            "cp_id": cp_id,
+            "manufacturer": m.get("manufacturer") or boot.get("charge_point_vendor") or boot.get("vendor_id"),
+            "model": m.get("model") or boot.get("charge_point_model"),
+            "serial_number": payload["serial_number_by_cp"].get(cp_id),
+            "firmware_version": m.get("firmwareVersion") or m.get("firmware_version") or boot.get("firmware_version"),
+            "ip_address": m.get("ipAddress") or m.get("ip_address"),
+            "iccid": m.get("iccid"),
+            "imsi": m.get("imsi"),
+            "commissioning_date": m.get("commissioningDate") or m.get("commissioning_date"),
+            "uptime": m.get("uptime"),
+            "cpms_connection_status": "connected" if cp_id in COLLECTOR.active_connections else "disconnected",
+            "reboot_logs": m.get("rebootLogs") or m.get("reboot_logs") or [],
+            "boot_notification": boot,
+            "metadata": m,
+        }
 
     sessions = build_sessions(payload["events"], payload["borne_logs"])
     # enrich sessions with meter-values aggregation and KPIs
@@ -464,11 +501,13 @@ class DataCollector:
         self.total_messages = 0
         self.total_connections = 0
         self.active_connections = {}
+        self.charge_points = {}
         self.last_seen = {}
         self.message_count_by_action = defaultdict(int)
         self.message_count_by_cp = defaultdict(int)
         self.status_by_cp = {}
         self.last_meter_values_by_cp = {}
+        self.boot_notifications_by_cp = {}
         self.open_transactions_by_cp = {}
         self._next_transaction_id = 1
 
@@ -507,9 +546,30 @@ class DataCollector:
             "last_seen": self.last_seen,
             "status_by_cp": self.status_by_cp,
             "last_meter_values_by_cp": self.last_meter_values_by_cp,
+            "boot_notifications_by_cp": self.boot_notifications_by_cp,
             "open_transactions_by_cp": self.open_transactions_by_cp,
         }
         STATE_FILE.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    async def register_charge_point(self, cp_id: str, charge_point) -> None:
+        async with self._lock:
+            self.charge_points[cp_id] = charge_point
+
+    async def unregister_charge_point(self, cp_id: str) -> None:
+        async with self._lock:
+            self.charge_points.pop(cp_id, None)
+
+    async def get_charge_point(self, cp_id: str):
+        async with self._lock:
+            return self.charge_points.get(cp_id)
+
+    async def update_boot_notification(self, cp_id: str, boot_payload: dict) -> None:
+        async with self._lock:
+            self.boot_notifications_by_cp[cp_id] = {
+                "timestamp": utc_now_iso(),
+                **boot_payload,
+            }
+            self._write_state()
 
     async def register_connection(self, cp_id: str, remote_address: str, path: str) -> None:
         event = {
@@ -664,6 +724,49 @@ async def force_stop(cp_id: str, transaction_id: int | None = None, meter_stop: 
     return JSONResponse({"result": "stopped", "transaction_id": transaction_id})
 
 
+@app.post("/api/cp/{cp_id}/remote_start")
+async def remote_start(cp_id: str, connector_id: int = 1, id_tag: str = "REMOTE_START"):
+    """Send a real OCPP RemoteStartTransaction to the connected charger.
+
+    The API caller does not need to provide an id_tag; a server-side default is used.
+    """
+    if not OCPP_AVAILABLE or call is None:
+        return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
+
+    cp_instance = await COLLECTOR.get_charge_point(cp_id)
+    if cp_instance is None:
+        return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
+
+    request = call.RemoteStartTransaction(id_tag=id_tag, connector_id=connector_id)
+    try:
+        response = await cp_instance.call(request)
+        await COLLECTOR.record_action(cp_id, "RemoteStartTransaction", {"connector_id": connector_id, "id_tag": id_tag, "response_status": getattr(response, "status", None)})
+        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "connector_id": connector_id, "id_tag_used": id_tag})
+    except Exception as error:
+        LOGGER.exception("RemoteStartTransaction failed for %s: %s", cp_id, error)
+        return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)
+
+
+@app.post("/api/cp/{cp_id}/remote_stop")
+async def remote_stop(cp_id: str, transaction_id: int):
+    """Send a real OCPP RemoteStopTransaction to the connected charger."""
+    if not OCPP_AVAILABLE or call is None:
+        return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
+
+    cp_instance = await COLLECTOR.get_charge_point(cp_id)
+    if cp_instance is None:
+        return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
+
+    request = call.RemoteStopTransaction(transaction_id=transaction_id)
+    try:
+        response = await cp_instance.call(request)
+        await COLLECTOR.record_action(cp_id, "RemoteStopTransaction", {"transaction_id": transaction_id, "response_status": getattr(response, "status", None)})
+        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "transaction_id": transaction_id})
+    except Exception as error:
+        LOGGER.exception("RemoteStopTransaction failed for %s: %s", cp_id, error)
+        return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)
+
+
 @app.get("/api/cp/{cp_id}/meta")
 def get_meta(cp_id: str):
     meta = read_meta()
@@ -688,6 +791,7 @@ if OCPP_AVAILABLE:
                 "charge_point_vendor": charge_point_vendor,
                 **kwargs,
             }
+            await COLLECTOR.update_boot_notification(self.id, payload)
             await COLLECTOR.record_action(self.id, "BootNotification", payload)
             LOGGER.info("BootNotification from %s (%s)", self.id, charge_point_vendor)
             return call_result.BootNotification(
@@ -825,6 +929,7 @@ if OCPP_AVAILABLE:
 
         adapter = ASGIWebSocketAdapter(websocket)
         cp_instance = ChargePoint(cp_id, adapter)
+        await COLLECTOR.register_charge_point(cp_id, cp_instance)
 
         try:
             await cp_instance.start()
@@ -833,6 +938,7 @@ if OCPP_AVAILABLE:
         except Exception as error:
             LOGGER.exception("Unexpected error for %s: %s", cp_id, error)
         finally:
+            await COLLECTOR.unregister_charge_point(cp_id)
             await COLLECTOR.register_disconnection(cp_id)
 
 
