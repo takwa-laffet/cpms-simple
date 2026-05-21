@@ -67,6 +67,13 @@ curl -X POST "http://127.0.0.1:5000/api/cp/CP001/remote_start?connector_id=1"
 ```
 
 By default the API uses a server-side `id_tag` value, so the caller does not need to provide one.
+The `connector_id` is optional. If the charger rejects the first request, the CPMS retries once without `connector_id` because some chargers only accept the remote start at station level.
+
+If you want to try without a connector number:
+
+```bash
+curl -X POST "http://127.0.0.1:5000/api/cp/CP001/remote_start"
+```
 
 To stop a remote session:
 

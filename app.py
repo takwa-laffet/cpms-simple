@@ -725,7 +725,7 @@ async def force_stop(cp_id: str, transaction_id: int | None = None, meter_stop: 
 
 
 @app.post("/api/cp/{cp_id}/remote_start")
-async def remote_start(cp_id: str, connector_id: int = 1, id_tag: str = "REMOTE_START"):
+async def remote_start(cp_id: str, connector_id: int | None = None, id_tag: str | None = None):
     """Send a real OCPP RemoteStartTransaction to the connected charger.
 
     The API caller does not need to provide an id_tag; a server-side default is used.
@@ -737,11 +737,63 @@ async def remote_start(cp_id: str, connector_id: int = 1, id_tag: str = "REMOTE_
     if cp_instance is None:
         return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
 
-    request = call.RemoteStartTransaction(id_tag=id_tag, connector_id=connector_id)
+    effective_id_tag = id_tag or read_meta().get(cp_id, {}).get("remoteStartIdTag") or read_meta().get(cp_id, {}).get("defaultIdTag") or "REMOTE_START"
+
+    def build_request(include_connector: bool):
+        request_kwargs = {"id_tag": effective_id_tag}
+        if include_connector and connector_id is not None:
+            request_kwargs["connector_id"] = connector_id
+        return call.RemoteStartTransaction(**request_kwargs)
+
     try:
+        request = build_request(include_connector=True)
         response = await cp_instance.call(request)
-        await COLLECTOR.record_action(cp_id, "RemoteStartTransaction", {"connector_id": connector_id, "id_tag": id_tag, "response_status": getattr(response, "status", None)})
-        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "connector_id": connector_id, "id_tag_used": id_tag})
+        response_status = getattr(response, "status", None)
+
+        # Some chargers ignore or reject connector_id; retry once without it.
+        if str(response_status).lower() not in ("accepted", "accept", "ok") and connector_id is not None:
+            fallback_request = build_request(include_connector=False)
+            fallback_response = await cp_instance.call(fallback_request)
+            fallback_status = getattr(fallback_response, "status", None)
+            await COLLECTOR.record_action(
+                cp_id,
+                "RemoteStartTransaction",
+                {
+                    "connector_id": connector_id,
+                    "id_tag": effective_id_tag,
+                    "response_status": response_status,
+                    "fallback_used": True,
+                    "fallback_response_status": fallback_status,
+                },
+            )
+            return JSONResponse({
+                "result": "sent",
+                "response_status": fallback_status,
+                "connector_id": connector_id,
+                "connector_id_used": None,
+                "id_tag_used": effective_id_tag,
+                "fallback_used": True,
+                "initial_response_status": response_status,
+            })
+
+        await COLLECTOR.record_action(
+            cp_id,
+            "RemoteStartTransaction",
+            {
+                "connector_id": connector_id,
+                "id_tag": effective_id_tag,
+                "response_status": response_status,
+                "fallback_used": False,
+            },
+        )
+        return JSONResponse({
+            "result": "sent",
+            "response_status": response_status,
+            "connector_id": connector_id,
+            "connector_id_used": connector_id,
+            "id_tag_used": effective_id_tag,
+            "fallback_used": False,
+        })
     except Exception as error:
         LOGGER.exception("RemoteStartTransaction failed for %s: %s", cp_id, error)
         return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)
