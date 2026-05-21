@@ -133,7 +133,7 @@ def normalize_boot_payload(payload: dict) -> dict:
         if normalized.get(target) is not None:
             continue
         for key in keys:
-            if normalized.get(key) is not None:
+            if normalized.get(key) is not None: 
                 normalized[target] = normalized.get(key)
                 break
 
