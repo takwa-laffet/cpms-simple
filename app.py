@@ -46,6 +46,7 @@ EVENTS_FILE = DATA_DIR / "events.jsonl"
 STATE_FILE = DATA_DIR / "state_snapshot.json"
 BORNE_LOGS_DIR = DATA_DIR / "borne_logs"
 BORNE_LOGS_DIR.mkdir(exist_ok=True)
+META_FILE = DATA_DIR / "borne_meta.json"
 
 
 def utc_now_iso() -> str:
@@ -95,6 +96,124 @@ def read_borne_logs() -> dict[str, list[dict]]:
     return logs
 
 
+def read_meta() -> dict:
+    return read_json_file(META_FILE, {})
+
+
+def write_meta(meta: dict) -> None:
+    META_FILE.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def build_sessions(events: list[dict], borne_logs: dict[str, list[dict]]) -> dict[str, list[dict]]:
+    # Build simple session summaries per cp_id using StartTransaction/StopTransaction events
+    sessions_by_cp: dict[str, dict[int, dict]] = {}
+
+    for ev in events:
+        if ev.get("event_type") != "ocpp_message":
+            continue
+        cp_id = ev.get("cp_id")
+        action = ev.get("action")
+        payload = ev.get("payload") or {}
+
+        if cp_id not in sessions_by_cp:
+            sessions_by_cp[cp_id] = {}
+
+        if action == "StartTransaction":
+            tx = payload.get("transaction_id") or payload.get("transactionId") or None
+            # If start transaction id is not present, use collector-assigned id in payload
+            tx_id = tx if tx is not None else payload.get("transaction_id")
+            if tx_id is None:
+                # fallback: use internal open transactions if any
+                tx_id = payload.get("transactionId")
+
+            sessions_by_cp[cp_id][tx_id] = {
+                "session_id": tx_id,
+                "start": ev.get("timestamp"),
+                "connector_id": payload.get("connector_id"),
+                "id_tag": payload.get("id_tag"),
+                "meter_start": payload.get("meter_start"),
+                "events": [ev],
+            }
+
+        if action == "StopTransaction":
+            tx_id = payload.get("transaction_id") or payload.get("transactionId")
+            if tx_id is None:
+                continue
+            sess = sessions_by_cp.get(cp_id, {}).get(tx_id)
+            if sess is None:
+                # create partial session if missing
+                sessions_by_cp.setdefault(cp_id, {})[tx_id] = {
+                    "session_id": tx_id,
+                    "start": None,
+                    "end": ev.get("timestamp"),
+                    "connector_id": payload.get("connector_id"),
+                    "meter_stop": payload.get("meter_stop"),
+                    "events": [ev],
+                }
+            else:
+                sess["end"] = ev.get("timestamp")
+                sess["meter_stop"] = payload.get("meter_stop")
+                sess.setdefault("events", []).append(ev)
+
+    # Attach meter_values from borne_logs where possible
+    for cp_id, logs in borne_logs.items():
+        for entry in logs:
+            # look for meter values entries and attach to session by transaction_id
+            if entry.get("event_type") == "ocpp_message" and entry.get("action") == "MeterValues":
+                payload = entry.get("payload", {})
+                tx = payload.get("transaction_id") or payload.get("transactionId")
+                if tx is None:
+                    # try to attach by time proximity: skip for now
+                    continue
+                sess = sessions_by_cp.get(cp_id, {}).get(tx)
+                if sess:
+                    sess.setdefault("meter_values", []).append(payload)
+
+    # Convert to lists and compute basic metrics
+    result: dict[str, list[dict]] = {}
+    for cp_id, txs in sessions_by_cp.items():
+        result[cp_id] = []
+        for tx_id, s in txs.items():
+            start = s.get("start")
+            end = s.get("end")
+            meter_start = s.get("meter_start")
+            meter_stop = s.get("meter_stop")
+            energy = None
+            duration = None
+            try:
+                if meter_start is not None and meter_stop is not None:
+                    energy = (meter_stop - meter_start) / 1000.0
+                if start and end:
+                    from datetime import datetime
+                    fmt = None
+                    try:
+                        # ISO parse
+                        start_dt = datetime.fromisoformat(start)
+                        end_dt = datetime.fromisoformat(end)
+                        duration = (end_dt - start_dt).total_seconds()
+                    except Exception:
+                        duration = None
+            except Exception:
+                energy = None
+
+            item = {
+                "session_id": tx_id,
+                "start": start,
+                "end": end,
+                "duration_s": duration,
+                "meter_start": meter_start,
+                "meter_stop": meter_stop,
+                "energy_kwh": energy,
+                "connector_id": s.get("connector_id"),
+                "id_tag": s.get("id_tag"),
+                "meter_values": s.get("meter_values", []),
+                "events": s.get("events", []),
+            }
+            result[cp_id].append(item)
+
+    return result
+
+
 def build_cp_payload() -> dict:
     snapshot = read_json_file(STATE_FILE, {
         "generated_at": utc_now_iso(),
@@ -121,6 +240,30 @@ def build_cp_payload() -> dict:
             "state_snapshot": str(STATE_FILE),
             "borne_logs_dir": str(BORNE_LOGS_DIR),
         },
+    }
+
+    # add metadata and sessions
+    meta = read_meta()
+    payload["metadata"] = meta
+
+    sessions = build_sessions(payload["events"], payload["borne_logs"])
+    payload["sessions"] = sessions
+
+    # basic energy aggregates
+    total_kwh = 0.0
+    kwh_per_cp = {}
+    for cp_id, sess_list in sessions.items():
+        cp_sum = 0.0
+        for s in sess_list:
+            if s.get("energy_kwh"):
+                cp_sum += float(s["energy_kwh"])
+        if cp_sum:
+            kwh_per_cp[cp_id] = cp_sum
+            total_kwh += cp_sum
+
+    payload["energy"] = {
+        "total_kwh": total_kwh,
+        "kwh_per_cp": kwh_per_cp,
     }
 
     payload.update(snapshot)
@@ -315,6 +458,37 @@ def get_cp_state(cp_id: str | None = None):
         }
 
     return JSONResponse(filtered_payload)
+
+
+@app.post("/api/cp/{cp_id}/force_start")
+async def force_start(cp_id: str, connector_id: int = 1, meter_start: int = 0):
+    """Force-start a transaction server-side without requiring CP StartTransaction or id_tag."""
+    tx_id = await COLLECTOR.start_transaction(cp_id, {"connector_id": connector_id, "meter_start": meter_start})
+    await COLLECTOR.record_action(cp_id, "ForceStart", {"transaction_id": tx_id, "connector_id": connector_id, "meter_start": meter_start})
+    return JSONResponse({"result": "started", "transaction_id": tx_id})
+
+
+@app.post("/api/cp/{cp_id}/force_stop")
+async def force_stop(cp_id: str, transaction_id: int | None = None, meter_stop: int = 0):
+    """Force-stop a transaction server-side without requiring CP StopTransaction."""
+    payload = {"meter_stop": meter_stop, "transaction_id": transaction_id}
+    await COLLECTOR.record_action(cp_id, "ForceStop", payload)
+    await COLLECTOR.stop_transaction(cp_id, payload)
+    return JSONResponse({"result": "stopped", "transaction_id": transaction_id})
+
+
+@app.get("/api/cp/{cp_id}/meta")
+def get_meta(cp_id: str):
+    meta = read_meta()
+    return JSONResponse(meta.get(cp_id, {}))
+
+
+@app.post("/api/cp/{cp_id}/meta")
+def set_meta(cp_id: str, meta: dict):
+    store = read_meta()
+    store[cp_id] = {**store.get(cp_id, {}), **meta}
+    write_meta(store)
+    return JSONResponse({"result": "ok", "meta": store[cp_id]})
 
 
 if OCPP_AVAILABLE:

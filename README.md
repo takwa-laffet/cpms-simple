@@ -4,10 +4,6 @@ Minimal CPMS app that exposes charger state as JSON through a Flask API.
 
 ## What it does
 
-- Serves the current CPMS snapshot at `GET /api/cp`
-- Stores state in `cpms_data/state_snapshot.json`
-- Logs charger events under `cpms_data/borne_logs/`
-- Uses `PORT` from the environment, so it can run on Render
 
 ## Run locally
 
@@ -20,6 +16,22 @@ Then open:
 
 ```text
 http://127.0.0.1:5000/api/cp
+```
+
+## Force start/stop (server-side)
+
+You can force-start or force-stop a transaction on the server without sending OCPP Start/Stop or id_tags.
+
+Start:
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/cp/borne1/force_start -d "connector_id=1&meter_start=0"
+```
+
+Stop:
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/cp/borne1/force_stop -d "transaction_id=1&meter_stop=100"
 ```
 
 WebSocket (OCPP) server (optional):
