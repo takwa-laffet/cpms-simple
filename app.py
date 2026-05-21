@@ -106,6 +106,39 @@ def write_meta(meta: dict) -> None:
     META_FILE.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
+def normalize_boot_payload(payload: dict) -> dict:
+    """Normalize BootNotification payload fields across OCPP naming variants."""
+    normalized = dict(payload or {})
+    aliases = {
+        "charge_point_vendor": ["charge_point_vendor", "chargePointVendor", "vendor", "manufacturer"],
+        "charge_point_model": ["charge_point_model", "chargePointModel", "model"],
+        "serial_number": [
+            "serial_number",
+            "serialNumber",
+            "charge_point_serial_number",
+            "chargePointSerialNumber",
+            "charge_box_serial_number",
+            "chargeBoxSerialNumber",
+            "charge_box_serialNumber",
+        ],
+        "firmware_version": ["firmware_version", "firmwareVersion", "firmware"],
+        "iccid": ["iccid", "ICCID"],
+        "imsi": ["imsi", "IMSI"],
+        "meter_type": ["meter_type", "meterType"],
+        "meter_serial_number": ["meter_serial_number", "meterSerialNumber"],
+    }
+
+    for target, keys in aliases.items():
+        if normalized.get(target) is not None:
+            continue
+        for key in keys:
+            if normalized.get(key) is not None:
+                normalized[target] = normalized.get(key)
+                break
+
+    return normalized
+
+
 def build_sessions(events: list[dict], borne_logs: dict[str, list[dict]]) -> dict[str, list[dict]]:
     # Build simple session summaries per cp_id using StartTransaction/StopTransaction events
     sessions_by_cp: dict[str, dict[int, dict]] = {}
@@ -438,10 +471,11 @@ def build_cp_payload() -> dict:
     payload["boot_notifications_by_cp"] = snapshot.get("boot_notifications_by_cp", {})
     payload["serial_number_by_cp"] = {}
     for cp_id, boot in payload["boot_notifications_by_cp"].items():
+        normalized_boot = normalize_boot_payload(boot)
         serial = (
-            boot.get("serial_number")
-            or boot.get("charge_box_serial_number")
-            or boot.get("charge_point_serial_number")
+            normalized_boot.get("serial_number")
+            or normalized_boot.get("charge_box_serial_number")
+            or normalized_boot.get("charge_point_serial_number")
             or meta.get(cp_id, {}).get("serialNumber")
             or meta.get(cp_id, {}).get("serial_number")
         )
@@ -449,7 +483,7 @@ def build_cp_payload() -> dict:
 
     payload["general_info_by_cp"] = {}
     for cp_id in set(list(meta.keys()) + list(payload["boot_notifications_by_cp"].keys())):
-        boot = payload["boot_notifications_by_cp"].get(cp_id, {})
+        boot = normalize_boot_payload(payload["boot_notifications_by_cp"].get(cp_id, {}))
         m = meta.get(cp_id, {})
         payload["general_info_by_cp"][cp_id] = {
             "cp_id": cp_id,
@@ -565,9 +599,10 @@ class DataCollector:
 
     async def update_boot_notification(self, cp_id: str, boot_payload: dict) -> None:
         async with self._lock:
+            normalized = normalize_boot_payload(boot_payload)
             self.boot_notifications_by_cp[cp_id] = {
                 "timestamp": utc_now_iso(),
-                **boot_payload,
+                **normalized,
             }
             self._write_state()
 
@@ -838,11 +873,11 @@ if OCPP_AVAILABLE:
     class ChargePoint(cp):
         @on("BootNotification")
         async def on_boot_notification(self, charge_point_model, charge_point_vendor, **kwargs):
-            payload = {
+            payload = normalize_boot_payload({
                 "charge_point_model": charge_point_model,
                 "charge_point_vendor": charge_point_vendor,
                 **kwargs,
-            }
+            })
             await COLLECTOR.update_boot_notification(self.id, payload)
             await COLLECTOR.record_action(self.id, "BootNotification", payload)
             LOGGER.info("BootNotification from %s (%s)", self.id, charge_point_vendor)
