@@ -214,6 +214,191 @@ def build_sessions(events: list[dict], borne_logs: dict[str, list[dict]]) -> dic
     return result
 
 
+def parse_meter_payload(payload: dict) -> list[dict]:
+    """Extract readings from a MeterValues payload.
+
+    Returns list of dict: {timestamp: iso, energy_wh: float|None, power_w: float|None, current_a: float|None, voltage_v: float|None}
+    """
+    readings = []
+    # common OCPP MeterValues structure: payload contains 'meter_value' list
+    meter_values = payload.get("meter_value") or payload.get("meterValues") or []
+    for mv in meter_values:
+        ts = mv.get("timestamp")
+        sampled = mv.get("sampled_value") or mv.get("sampledValue") or []
+        entry = {"timestamp": ts, "energy_wh": None, "power_w": None, "current_a": None, "voltage_v": None}
+        for sv in sampled:
+            meas = sv.get("measurand") or sv.get("measurand")
+            val = sv.get("value")
+            if val is None:
+                continue
+            try:
+                num = float(val)
+            except Exception:
+                continue
+
+            # detect energy cumulative
+            if meas and "Energy" in meas:
+                # assume value in Wh or kWh? many chargers report Wh in Wh or in kWh; try to guess
+                # if value > 10000 assume Wh, else if < 1000 assume Wh too; best effort: if value > 1e6 treat as Wh
+                entry["energy_wh"] = num if num > 1000 else num * 1000 if num < 1 else num * 1000
+            elif meas and ("Power" in meas or meas.lower().startswith("power")):
+                entry["power_w"] = num
+            elif meas and ("Current" in meas or meas.lower().startswith("current")):
+                entry["current_a"] = num
+            elif meas and ("Voltage" in meas or meas.lower().startswith("voltage")):
+                entry["voltage_v"] = num
+
+        readings.append(entry)
+
+    return readings
+
+
+def aggregate_session_meter_values(session: dict, borne_log_entries: list[dict]) -> dict:
+    """Aggregate meter readings for a single session into minute buckets and compute KPIs."""
+    from datetime import datetime, timezone, timedelta
+
+    start = session.get("start")
+    end = session.get("end")
+    if not start:
+        return session
+
+    try:
+        start_dt = datetime.fromisoformat(start)
+    except Exception:
+        return session
+
+    if end:
+        try:
+            end_dt = datetime.fromisoformat(end)
+        except Exception:
+            end_dt = None
+    else:
+        end_dt = None
+
+    # collect readings matching this session: by transaction id or by timestamp range
+    tx = session.get("session_id")
+    readings = []
+    for entry in borne_log_entries:
+        if entry.get("event_type") != "ocpp_message":
+            continue
+        if entry.get("action") != "MeterValues":
+            continue
+        payload = entry.get("payload") or {}
+        # check transaction id
+        tx_id = payload.get("transaction_id") or payload.get("transactionId")
+        entry_ts = payload.get("timestamp") or payload.get("ts")
+        if tx is not None and tx_id is not None and str(tx_id) == str(tx):
+            readings.extend(parse_meter_payload(payload))
+        else:
+            # if timestamp within session range, include
+            if entry_ts:
+                try:
+                    entry_dt = datetime.fromisoformat(entry_ts)
+                    if entry_dt >= start_dt and (end_dt is None or entry_dt <= end_dt):
+                        readings.extend(parse_meter_payload(payload))
+                except Exception:
+                    continue
+
+    if not readings:
+        session["charge_curve"] = []
+        session["kpis"] = {"total_kwh": session.get("energy_kwh"), "peak_kw": None, "avg_kw": None}
+        return session
+
+    # sort readings by timestamp
+    def parse_ts(r):
+        try:
+            return datetime.fromisoformat(r.get("timestamp"))
+        except Exception:
+            return None
+
+    readings = [r for r in readings if parse_ts(r) is not None]
+    readings.sort(key=lambda r: parse_ts(r))
+
+    # if energy_wh available, compute energy by diff; else integrate power
+    energy_kwh = session.get("energy_kwh")
+    peak_power_w = 0.0
+    power_points = []  # list of (ts, power_w)
+
+    prev_energy = None
+    prev_ts = None
+    for r in readings:
+        ts_dt = parse_ts(r)
+        pw = r.get("power_w")
+        ew = r.get("energy_wh")
+        if ew is not None and prev_energy is not None and prev_ts is not None:
+            # compute power estimate
+            dt = (ts_dt - prev_ts).total_seconds()
+            if dt > 0:
+                power_est = ((ew - prev_energy) / 1000.0) * 3600.0 / dt * 1000.0 / 1000.0
+                # fallback: approximate instantaneous power if available
+                # but keep power_est as (delta energy / time) in W
+                power_points.append((ts_dt, power_est))
+                if power_est > peak_power_w:
+                    peak_power_w = power_est
+        if pw is not None:
+            power_points.append((ts_dt, pw))
+            if pw > peak_power_w:
+                peak_power_w = pw
+
+        if ew is not None:
+            prev_energy = ew
+            prev_ts = ts_dt
+
+    # if energy_kwh absent but cumulative energy present, compute from first/last
+    if energy_kwh is None:
+        first_ew = next((r.get("energy_wh") for r in readings if r.get("energy_wh") is not None), None)
+        last_ew = next((r.get("energy_wh") for r in reversed(readings) if r.get("energy_wh") is not None), None)
+        if first_ew is not None and last_ew is not None:
+            try:
+                energy_kwh = (last_ew - first_ew) / 1000.0
+            except Exception:
+                energy_kwh = None
+
+    # build minute buckets
+    if end_dt is None:
+        end_dt = readings[-1] and parse_ts(readings[-1])
+    if end_dt is None:
+        session["charge_curve"] = []
+        session["kpis"] = {"total_kwh": energy_kwh, "peak_kw": peak_power_w / 1000.0 if peak_power_w else None, "avg_kw": None}
+        return session
+
+    # create minute intervals from start_dt to end_dt
+    start_min = start_dt.replace(second=0, microsecond=0)
+    end_min = end_dt.replace(second=0, microsecond=0)
+    minutes = int(((end_min - start_min).total_seconds() // 60) + 1)
+    buckets = []
+    for i in range(minutes):
+        bucket_start = start_min + timedelta(minutes=i)
+        bucket_end = bucket_start + timedelta(minutes=1)
+        # collect power points in bucket
+        p_vals = [p for (t, p) in power_points if t >= bucket_start and t < bucket_end]
+        avg_power = sum(p_vals) / len(p_vals) if p_vals else None
+        energy_kwh_min = (avg_power / 1000.0) * (1.0 / 60.0) if avg_power is not None else None
+        buckets.append({"minute_start": bucket_start.isoformat(), "avg_power_w": avg_power, "energy_kwh": energy_kwh_min})
+
+    # compute avg power across session
+    power_vals = [b["avg_power_w"] for b in buckets if b["avg_power_w"] is not None]
+    avg_power_w = sum(power_vals) / len(power_vals) if power_vals else None
+
+    session["charge_curve"] = buckets
+    session["kpis"] = {
+        "total_kwh": energy_kwh,
+        "peak_kw": (peak_power_w / 1000.0) if peak_power_w else None,
+        "avg_kw": (avg_power_w / 1000.0) if avg_power_w else None,
+    }
+
+    return session
+
+
+def aggregate_sessions_metrics(sessions: dict[str, list[dict]], borne_logs: dict[str, list[dict]]) -> dict[str, list[dict]]:
+    # augment each session with charge_curve and KPIs
+    for cp_id, sess_list in sessions.items():
+        logs = borne_logs.get(cp_id, [])
+        for i, s in enumerate(sess_list):
+            sess_list[i] = aggregate_session_meter_values(s, logs)
+    return sessions
+
+
 def build_cp_payload() -> dict:
     snapshot = read_json_file(STATE_FILE, {
         "generated_at": utc_now_iso(),
@@ -247,6 +432,8 @@ def build_cp_payload() -> dict:
     payload["metadata"] = meta
 
     sessions = build_sessions(payload["events"], payload["borne_logs"])
+    # enrich sessions with meter-values aggregation and KPIs
+    sessions = aggregate_sessions_metrics(sessions, payload["borne_logs"])
     payload["sessions"] = sessions
 
     # basic energy aggregates
