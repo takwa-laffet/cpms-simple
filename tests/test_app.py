@@ -38,6 +38,20 @@ class AppSmokeTests(unittest.TestCase):
         self.assertIn('id="login-form"', response.text)
         self.assertIn('id="login-password"', response.text)
 
+    def test_root_query_params_can_create_session(self) -> None:
+        response = self.client.get(
+            "/?email=mvp%40prelabel.tn&password=Cpms_Secure%2348Tz%402026",
+            follow_redirects=False,
+        )
+
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(response.headers.get("location"), "/")
+        self.assertIn("cpms_auth=", response.headers.get("set-cookie", ""))
+
+        session_response = self.client.get("/api/auth/me")
+        self.assertEqual(session_response.status_code, 200)
+        self.assertTrue(session_response.json()["authenticated"])
+
     def test_health_endpoint(self) -> None:
         response = self.client.get("/health")
 

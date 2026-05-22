@@ -130,6 +130,24 @@ def require_authenticated_email(request: Request) -> str:
     return email
 
 
+def build_auth_response(email: str, wants_json: bool):
+    if wants_json:
+        response = JSONResponse({"status": "ok", "email": email})
+    else:
+        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+    response.set_cookie(
+        AUTH_COOKIE_NAME,
+        build_auth_cookie_value(email),
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=AUTH_SESSION_TTL_SECONDS,
+        path="/",
+    )
+    return response
+
+
 def parse_iso_datetime(value: str | None):
     if not value:
         return None
@@ -882,21 +900,7 @@ async def login(request: Request):
 
         return RedirectResponse(url="/?login=failed", status_code=status.HTTP_303_SEE_OTHER)
 
-    if wants_json:
-        response = JSONResponse({"status": "ok", "email": email})
-    else:
-        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-
-    response.set_cookie(
-        AUTH_COOKIE_NAME,
-        build_auth_cookie_value(email),
-        httponly=True,
-        samesite="lax",
-        secure=False,
-        max_age=AUTH_SESSION_TTL_SECONDS,
-        path="/",
-    )
-    return response
+    return build_auth_response(email, wants_json)
 
 
 @app.post("/api/auth/logout")
@@ -924,7 +928,15 @@ def health():
 
 
 @app.get("/")
-def root():
+def root(request: Request):
+    email = request.query_params.get("email")
+    password = request.query_params.get("password")
+    if email is not None and password is not None:
+        if hmac.compare_digest(email.strip(), AUTH_EMAIL) and hmac.compare_digest(password, AUTH_PASSWORD):
+            return build_auth_response(email.strip(), wants_json=False)
+
+        return RedirectResponse(url="/?login=failed", status_code=status.HTTP_303_SEE_OTHER)
+
     if FRONTEND_INDEX_FILE.exists():
         return HTMLResponse(FRONTEND_INDEX_FILE.read_text(encoding="utf-8"))
 
