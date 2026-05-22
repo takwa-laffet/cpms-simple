@@ -527,18 +527,26 @@ function renderSessions(data, selectedCpId) {
     const time = template.querySelector('.timeline-time');
     const body = template.querySelector('.timeline-body');
 
-    title.textContent = `Session ${session.session_id}`;
-    time.textContent = session.end || session.start || 'ongoing';
-    body.textContent = [
-      `Start: ${session.start || '—'}`,
-      `End: ${session.end || '—'}`,
-      `Duration: ${session.duration_s ? `${Math.round(session.duration_s)} s` : '—'}`,
-      `Energy: ${session.energy_kwh ? `${Number(session.energy_kwh).toFixed(3)} kWh` : '—'}`,
-      `Peak: ${session.kpis?.peak_kw ? `${Number(session.kpis.peak_kw).toFixed(2)} kW` : '—'}`,
-      `Average: ${session.kpis?.avg_kw ? `${Number(session.kpis.avg_kw).toFixed(2)} kW` : '—'}`,
-      `Price: ${session.price !== undefined ? formatMoney(session.price, session.currency || 'dt') : '—'}`,
-      `User: ${session.user || session.id_tag || '—'}`,
-    ].join(' · ');
+    const sessionId = session.session_id || '—';
+    const startTime = session.start ? new Date(session.start).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    const endTime = session.end ? new Date(session.end).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'ongoing';
+    const duration = session.duration_s ? `${Math.round(session.duration_s / 60)} min` : '—';
+    const energy = session.energy_kwh ? `${Number(session.energy_kwh).toFixed(2)} kWh` : '—';
+    const price = session.price !== undefined ? formatMoney(session.price, session.currency || 'dt') : '—';
+    const user = session.user || session.id_tag || '—';
+
+    title.textContent = `Session #${sessionId}`;
+    time.textContent = endTime;
+
+    body.innerHTML = `
+      <div class="session-grid">
+        <div class="session-item"><span class="session-label">Start</span><span>${startTime}</span></div>
+        <div class="session-item"><span class="session-label">Duration</span><span>${duration}</span></div>
+        <div class="session-item"><span class="session-label">Energy</span><span>${energy}</span></div>
+        <div class="session-item"><span class="session-label">Price</span><span>${price}</span></div>
+        <div class="session-item"><span class="session-label">User</span><span>${user}</span></div>
+      </div>
+    `;
 
     els.sessionList.appendChild(template);
   });
@@ -635,49 +643,43 @@ function renderEvents(data, selectedCpId) {
     const body = template.querySelector('.timeline-body');
 
     title.textContent = `${event.event_type}${event.action ? ` · ${event.action}` : ''}`;
-    
+
     // Format timestamp to be more readable
     let formattedTime = '—';
     if (event.timestamp) {
       try {
         const date = new Date(event.timestamp);
-        // Format as: MM/DD/YYYY HH:MM:SS
         formattedTime = date.toLocaleString('en-US', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
+          month: 'short',
+          day: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
-          second: '2-digit',
-          hour12: false
         });
       } catch (e) {
-        // Fallback to original timestamp if parsing fails
         formattedTime = event.timestamp;
       }
     }
     time.textContent = formattedTime;
-    
+
     // Create a more readable display of event details
     let details = '';
     if (event.event_type === 'connection_opened') {
-      details = `Connected from ${event.remote_address || 'unknown'} on path ${event.path || 'unknown'}`;
+      details = `Connected from ${event.remote_address || 'unknown'}`;
     } else if (event.event_type === 'connection_closed') {
       details = `Connection closed: ${event.reason || 'unknown reason'}`;
     } else if (event.event_type === 'ocpp_message') {
       details = `OCPP ${event.action || 'message'}`;
       if (event.payload && Object.keys(event.payload).length > 0) {
-        // Show key payload fields depending on action
         if (event.action === 'BootNotification') {
           details += ` - ${event.payload.charge_point_vendor || 'Unknown'} ${event.payload.charge_point_model || 'Unknown'}`;
         } else if (event.action === 'Heartbeat') {
-          details += ` - OK`;
+          details += ` - Heartbeat OK`;
         } else if (event.action === 'MeterValues' && event.payload.meter_value) {
           const mv = event.payload.meter_value[0] || {};
           const sampledValue = mv.sampled_value || [];
           const energyValue = sampledValue.find(sv => sv.measurand === 'Energy.Active.Import.Register');
           if (energyValue) {
-            details += ` - Energy: ${energyValue.value} ${energyValue.unit}`;
+            details += ` - Energy: ${energyValue.value} ${energyValue.unit || 'Wh'}`;
           }
         }
       }
@@ -691,20 +693,20 @@ function renderEvents(data, selectedCpId) {
           details += ` - TX ID: ${event.payload.transaction_id}`;
         }
       }
-} else {
-        // Format simple event details without JSON
-        const eventCopy = {...event};
-        delete eventCopy.timestamp;
-        delete eventCopy.cp_id;
-        const keys = Object.keys(eventCopy);
-        if (keys.length > 0) {
-          details = keys.map(k => `${k}: ${formatValue(eventCopy[k])}`).join(' | ');
-        } else {
-          details = event.event_type || 'Event occurred';
-        }
+    } else {
+      // Format simple event details without JSON
+      const eventCopy = {...event};
+      delete eventCopy.timestamp;
+      delete eventCopy.cp_id;
+      const keys = Object.keys(eventCopy);
+      if (keys.length > 0) {
+        details = keys.map(k => `${k}: ${formatValue(eventCopy[k])}`).join(' | ');
+      } else {
+        details = event.event_type || 'Event occurred';
       }
+    }
 
-      body.textContent = details;
+    body.textContent = details;
     els.eventList.appendChild(template);
   });
 }

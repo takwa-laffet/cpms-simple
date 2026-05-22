@@ -717,6 +717,31 @@ h1 {
   word-break: break-word;
 }
 
+.session-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.session-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.session-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 500px) {
+  .session-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .toast {
   position: fixed;
   right: 1rem;
