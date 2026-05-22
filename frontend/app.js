@@ -66,7 +66,11 @@ function formatValue(value) {
   }
 
   if (typeof value === 'object') {
-    return JSON.stringify(value, null, 2);
+    // Format objects as readable key-value pairs
+    const entries = Object.entries(value)
+      .filter(([_, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`);
+    return entries.length ? entries.join(', ') : '—';
   }
 
   return String(value);
@@ -278,7 +282,7 @@ async function startDashboard() {
 }
 
 async function checkSession() {
-  const response = await fetch('/api/auth/me');
+  const response = await fetch('/api/auth/me', { credentials: 'include' });
   if (!response.ok) {
     return null;
   }
@@ -296,6 +300,7 @@ async function signIn(email, password) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({ email, password }),
+    credentials: 'include'
   });
 
   const payload = await response.json().catch(() => ({}));
@@ -311,7 +316,7 @@ async function signIn(email, password) {
 }
 
 async function signOut() {
-  await fetch('/api/auth/logout', { method: 'POST' });
+  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
   stopAutoRefresh();
   state.data = null;
   state.currentUser = null;
@@ -630,9 +635,76 @@ function renderEvents(data, selectedCpId) {
     const body = template.querySelector('.timeline-body');
 
     title.textContent = `${event.event_type}${event.action ? ` · ${event.action}` : ''}`;
-    time.textContent = event.timestamp || '—';
-    body.textContent = JSON.stringify(event, null, 2);
+    
+    // Format timestamp to be more readable
+    let formattedTime = '—';
+    if (event.timestamp) {
+      try {
+        const date = new Date(event.timestamp);
+        // Format as: MM/DD/YYYY HH:MM:SS
+        formattedTime = date.toLocaleString('en-US', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+      } catch (e) {
+        // Fallback to original timestamp if parsing fails
+        formattedTime = event.timestamp;
+      }
+    }
+    time.textContent = formattedTime;
+    
+    // Create a more readable display of event details
+    let details = '';
+    if (event.event_type === 'connection_opened') {
+      details = `Connected from ${event.remote_address || 'unknown'} on path ${event.path || 'unknown'}`;
+    } else if (event.event_type === 'connection_closed') {
+      details = `Connection closed: ${event.reason || 'unknown reason'}`;
+    } else if (event.event_type === 'ocpp_message') {
+      details = `OCPP ${event.action || 'message'}`;
+      if (event.payload && Object.keys(event.payload).length > 0) {
+        // Show key payload fields depending on action
+        if (event.action === 'BootNotification') {
+          details += ` - ${event.payload.charge_point_vendor || 'Unknown'} ${event.payload.charge_point_model || 'Unknown'}`;
+        } else if (event.action === 'Heartbeat') {
+          details += ` - OK`;
+        } else if (event.action === 'MeterValues' && event.payload.meter_value) {
+          const mv = event.payload.meter_value[0] || {};
+          const sampledValue = mv.sampled_value || [];
+          const energyValue = sampledValue.find(sv => sv.measurand === 'Energy.Active.Import.Register');
+          if (energyValue) {
+            details += ` - Energy: ${energyValue.value} ${energyValue.unit}`;
+          }
+        }
+      }
+    } else if (event.event_type === 'transaction_closed') {
+      details = `Transaction stopped`;
+      if (event.payload) {
+        if (event.payload.meter_stop !== undefined) {
+          details += ` - Final meter: ${event.payload.meter_stop}`;
+        }
+        if (event.payload.transaction_id !== undefined) {
+          details += ` - TX ID: ${event.payload.transaction_id}`;
+        }
+      }
+} else {
+        // Format simple event details without JSON
+        const eventCopy = {...event};
+        delete eventCopy.timestamp;
+        delete eventCopy.cp_id;
+        const keys = Object.keys(eventCopy);
+        if (keys.length > 0) {
+          details = keys.map(k => `${k}: ${formatValue(eventCopy[k])}`).join(' | ');
+        } else {
+          details = event.event_type || 'Event occurred';
+        }
+      }
 
+      body.textContent = details;
     els.eventList.appendChild(template);
   });
 }
@@ -664,6 +736,7 @@ function wireAdministrationForms() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
+          credentials: 'include'
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -696,6 +769,7 @@ function wireAdministrationForms() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
+          credentials: 'include'
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -726,7 +800,7 @@ function wireCommand(formId, buildUrl, bodyBuilder = null) {
 
     const formData = new FormData(form);
     const url = buildUrl(selectedCpId, formData);
-    const options = { method: 'POST' };
+    const options = { method: 'POST', credentials: 'include' };
 
     if (bodyBuilder) {
       const body = bodyBuilder(formData);
@@ -800,7 +874,7 @@ function wireCommands() {
 
 async function loadData() {
   const url = state.selectedCpId ? `/api/cp?cp_id=${encodeURIComponent(state.selectedCpId)}` : '/api/cp';
-  const response = await fetch(url);
+  const response = await fetch(url, { credentials: 'include' });
   if (response.status === 401) {
     throw new Error('Unauthorized');
   }
