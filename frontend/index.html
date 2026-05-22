@@ -104,7 +104,8 @@
 
             <div class="command-grid">
               <form id="force-start-form" class="command-card">
-                <h4>Force Start</h4>
+                <h4>Start</h4>
+                <p class="note">Tries a real charger start first, then falls back to CPMS tracking.</p>
                 <label>Connector ID <input name="connector_id" type="number" min="1" value="1" /></label>
                 <label>Meter Start <input name="meter_start" type="number" min="0" value="0" /></label>
                 <button class="btn btn-primary" type="submit">Start</button>

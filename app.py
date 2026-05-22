@@ -842,7 +842,14 @@ def get_cp_state(cp_id: str | None = None):
 
 @app.post("/api/cp/{cp_id}/force_start")
 async def force_start(cp_id: str, connector_id: int = 1, meter_start: int = 0):
-    """Force-start a transaction server-side without requiring CP StartTransaction or id_tag."""
+    """Prefer a real remote start, then fall back to server-side tracking."""
+    if OCPP_AVAILABLE and call is not None:
+        cp_instance = await COLLECTOR.get_charge_point(cp_id)
+        if cp_instance is not None:
+            remote_response = await remote_start(cp_id, connector_id=connector_id)
+            if getattr(remote_response, "status_code", 200) == 200:
+                return remote_response
+
     tx_id = await COLLECTOR.start_transaction(cp_id, {"connector_id": connector_id, "meter_start": meter_start})
     await COLLECTOR.record_action(cp_id, "ForceStart", {"transaction_id": tx_id, "connector_id": connector_id, "meter_start": meter_start})
     return JSONResponse({"result": "started", "transaction_id": tx_id})

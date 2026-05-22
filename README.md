@@ -35,18 +35,17 @@ The API snapshot remains available at:
 http://127.0.0.1:5000/api/cp
 ```
 
-## Force start/stop (server-side)
+## Force start/stop
 
 You can force-start or force-stop a transaction on the server without sending OCPP Start/Stop or id_tags.
 
-This is the current way to start charging in this project.
+`force_start` now tries a real OCPP `RemoteStartTransaction` first when the charger is connected, then falls back to server-side tracking if the charger is offline.
 
 Important:
 
-- `force_start` creates a transaction in CPMS even if the charger is not sending a StartTransaction message.
+- `force_start` prefers a real charger start when possible.
 - It does not require `id_tag`.
-- It is server-side tracking, not a real OCPP remote command to the charger.
-- If you want the charger itself to start via OCPP RemoteStartTransaction, I can add that next.
+- If the charger is not connected, it still creates a CPMS-side transaction.
 
 Start:
 

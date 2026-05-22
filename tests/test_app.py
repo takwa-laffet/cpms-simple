@@ -127,6 +127,16 @@ class RemoteCommandTests(unittest.TestCase):
         self.assertIn("connector_id", self.fake_cp.requests[0].kwargs)
         self.assertNotIn("connector_id", self.fake_cp.requests[1].kwargs)
 
+    def test_force_start_prefers_remote_start_when_connected(self) -> None:
+        with patch.object(app_module.COLLECTOR, "start_transaction", AsyncMock()) as start_transaction_patch:
+            response = self.client.post("/api/cp/CP001/force_start?connector_id=1&meter_start=12")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["result"], "sent")
+        self.assertEqual(len(self.fake_cp.requests), 2)
+        start_transaction_patch.assert_not_called()
+
     def test_remote_stop_sends_transaction_id(self) -> None:
         response = self.client.post("/api/cp/CP001/remote_stop?transaction_id=99")
 
