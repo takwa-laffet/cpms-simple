@@ -57,13 +57,20 @@ STATE_FILE = DATA_DIR / "state_snapshot.json"
 BORNE_LOGS_DIR = DATA_DIR / "borne_logs"
 BORNE_LOGS_DIR.mkdir(exist_ok=True)
 META_FILE = DATA_DIR / "borne_meta.json"
+USERS_FILE = DATA_DIR / "users.json"
+CHARGE_POINTS_FILE = DATA_DIR / "charge_points.json"
 FRONTEND_DIR = Path("frontend")
 FRONTEND_INDEX_FILE = FRONTEND_DIR / "index.html"
+FRONTEND_DASHBOARD_FILE = FRONTEND_DIR / "dashboard.html"
 AUTH_COOKIE_NAME = "cpms_auth"
 AUTH_EMAIL = os.environ.get("CPMS_LOGIN_EMAIL", "mvp@prelabel.tn")
 AUTH_PASSWORD = os.environ.get("CPMS_LOGIN_PASSWORD", "Cpms_Secure#48Tz@2026")
 AUTH_SECRET_KEY = os.environ.get("AUTH_SECRET_KEY", "cityos-dev-secret")
 AUTH_SESSION_TTL_SECONDS = int(os.environ.get("AUTH_SESSION_TTL_SECONDS", "86400"))
+BILLING_TARIFF_PER_KWH = float(os.environ.get("CITYOS_TARIFF_PER_KWH", "0.35"))
+SUPERVISION_ROLES = {"admin", "steg"}
+FULL_MANAGEMENT_ROLES = {"admin"}
+USER_MANAGEMENT_ROLES = {"admin"}
 
 
 class LoginPayload(BaseModel):
@@ -112,10 +119,11 @@ def verify_auth_cookie_value(cookie_value: str | None) -> str | None:
     if current_unix_timestamp() - issued_at > AUTH_SESSION_TTL_SECONDS:
         return None
 
-    if not hmac.compare_digest(email, AUTH_EMAIL):
+    user = get_user_by_email(email)
+    if user is None or not user.get("active", True):
         return None
 
-    return email
+    return user.get("email")
 
 
 def get_authenticated_email(request: Request) -> str | None:
@@ -130,11 +138,11 @@ def require_authenticated_email(request: Request) -> str:
     return email
 
 
-def build_auth_response(email: str, wants_json: bool):
+def build_auth_response(email: str, wants_json: bool, redirect_url: str = "/cityos"):
     if wants_json:
         response = JSONResponse({"status": "ok", "email": email})
     else:
-        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        response = RedirectResponse(url=redirect_url, status_code=status.HTTP_303_SEE_OTHER)
 
     response.set_cookie(
         AUTH_COOKIE_NAME,
@@ -146,6 +154,213 @@ def build_auth_response(email: str, wants_json: bool):
         path="/",
     )
     return response
+
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(f"{AUTH_SECRET_KEY}:{password}".encode("utf-8")).hexdigest()
+
+
+def ensure_seed_users() -> list[dict]:
+    users = read_json_file(USERS_FILE, [])
+    if not isinstance(users, list):
+        users = []
+
+    if not any(isinstance(user, dict) and user.get("email") == AUTH_EMAIL for user in users):
+        users.append(
+            {
+                "id": "admin-1",
+                "email": AUTH_EMAIL,
+                "password_hash": hash_password(AUTH_PASSWORD),
+                "role": "admin",
+                "name": "Rback Admin",
+                "active": True,
+                "created_at": utc_now_iso(),
+            }
+        )
+        write_json = json.dumps(users, indent=2, ensure_ascii=False)
+        USERS_FILE.write_text(write_json, encoding="utf-8")
+
+    return users
+
+
+def read_users() -> list[dict]:
+    return ensure_seed_users()
+
+
+def write_users(users: list[dict]) -> None:
+    USERS_FILE.write_text(json.dumps(users, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def public_user(user: dict) -> dict:
+    return {
+        "id": user.get("id"),
+        "email": user.get("email"),
+        "role": user.get("role", "operator"),
+        "name": user.get("name") or user.get("email"),
+        "active": bool(user.get("active", True)),
+        "created_at": user.get("created_at"),
+    }
+
+
+def get_user_by_email(email: str) -> dict | None:
+    normalized_email = email.strip().lower()
+    for user in read_users():
+        if str(user.get("email", "")).strip().lower() == normalized_email:
+            return user
+    return None
+
+
+def authenticate_user(email: str, password: str) -> dict | None:
+    user = get_user_by_email(email)
+    if user is None or not user.get("active", True):
+        return None
+
+    if not hmac.compare_digest(str(user.get("password_hash", "")), hash_password(password)):
+        return None
+
+    return user
+
+
+def get_authenticated_user(request: Request) -> dict | None:
+    email = get_authenticated_email(request)
+    if email is None:
+        return None
+
+    user = get_user_by_email(email)
+    if user is None or not user.get("active", True):
+        return None
+
+    return user
+
+
+def require_authenticated_user(request: Request) -> dict:
+    user = get_authenticated_user(request)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    return user
+
+
+def require_role(request: Request, allowed_roles: set[str]) -> dict:
+    user = require_authenticated_user(request)
+    if user.get("role") not in allowed_roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
+    return user
+
+
+def read_charge_point_registry() -> list[dict]:
+    registry = read_json_file(CHARGE_POINTS_FILE, [])
+    return registry if isinstance(registry, list) else []
+
+
+def write_charge_point_registry(registry: list[dict]) -> None:
+    CHARGE_POINTS_FILE.write_text(json.dumps(registry, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def get_charge_point_record(cp_id: str) -> dict | None:
+    normalized_cp_id = str(cp_id).strip().lower()
+    for record in read_charge_point_registry():
+        if str(record.get("cp_id", "")).strip().lower() == normalized_cp_id:
+            return record
+    return None
+
+
+def upsert_charge_point_record(record: dict) -> dict:
+    registry = read_charge_point_registry()
+    cp_id = str(record.get("cp_id") or record.get("id") or "").strip()
+    if not cp_id:
+        raise ValueError("cp_id is required")
+
+    timestamp = utc_now_iso()
+    normalized = {
+        "cp_id": cp_id,
+        "label": record.get("label") or cp_id,
+        "site": record.get("site"),
+        "connector_count": int(record.get("connector_count") or 1),
+        "tariff_per_kwh": float(record.get("tariff_per_kwh") or BILLING_TARIFF_PER_KWH),
+        "notes": record.get("notes"),
+        "created_at": record.get("created_at") or timestamp,
+        "updated_at": timestamp,
+    }
+
+    updated = False
+    for index, existing in enumerate(registry):
+        if str(existing.get("cp_id")).strip().lower() == cp_id.lower():
+            registry[index] = {**existing, **normalized, "created_at": existing.get("created_at") or normalized["created_at"]}
+            updated = True
+            break
+
+    if not updated:
+        registry.append(normalized)
+
+    write_charge_point_registry(registry)
+    return normalized
+
+
+def update_charge_point_tariff(cp_id: str, tariff_per_kwh: float) -> dict:
+    registry = read_charge_point_registry()
+    normalized_cp_id = str(cp_id).strip().lower()
+    timestamp = utc_now_iso()
+
+    for index, existing in enumerate(registry):
+        if str(existing.get("cp_id", "")).strip().lower() == normalized_cp_id:
+            updated = {
+                **existing,
+                "tariff_per_kwh": float(tariff_per_kwh),
+                "updated_at": timestamp,
+            }
+            registry[index] = updated
+            write_charge_point_registry(registry)
+            return updated
+
+    updated = {
+        "cp_id": cp_id,
+        "label": cp_id,
+        "site": None,
+        "connector_count": 1,
+        "tariff_per_kwh": float(tariff_per_kwh),
+        "notes": None,
+        "created_at": timestamp,
+        "updated_at": timestamp,
+    }
+    registry.append(updated)
+    write_charge_point_registry(registry)
+    return updated
+
+
+def build_charge_point_view(cp_id: str, snapshot: dict, general_info: dict, registry_record: dict | None) -> dict:
+    status_payload = snapshot.get("status_by_cp", {}).get(cp_id) or {}
+    is_connected = cp_id in COLLECTOR.active_connections
+    ocpp_status = status_payload.get("status")
+    if is_connected:
+        visible_status = ocpp_status or "Available"
+    else:
+        visible_status = "Offline"
+
+    current_tx = snapshot.get("open_transactions_by_cp", {}).get(cp_id) or {}
+    tariff = float((registry_record or {}).get("tariff_per_kwh") or BILLING_TARIFF_PER_KWH)
+    energy_kwh = 0.0
+    for session in (snapshot.get("sessions", {}) or {}).get(cp_id, []):
+        if session.get("energy_kwh"):
+            energy_kwh += float(session["energy_kwh"])
+
+    return {
+        "cp_id": cp_id,
+        "label": (registry_record or {}).get("label") or general_info.get("model") or cp_id,
+        "site": (registry_record or {}).get("site"),
+        "status": visible_status,
+        "connection_state": "connected" if is_connected else "offline",
+        "model": general_info.get("model"),
+        "serial_number": general_info.get("serial_number"),
+        "connector_count": (registry_record or {}).get("connector_count") or 1,
+        "tariff_per_kwh": tariff,
+        "last_seen": snapshot.get("last_seen", {}).get(cp_id),
+        "active_transaction": current_tx.get("transaction_id"),
+        "estimated_revenue": round(energy_kwh * tariff, 2),
+        "energy_kwh": round(energy_kwh, 3),
+        "notes": (registry_record or {}).get("notes"),
+    }
 
 
 def parse_iso_datetime(value: str | None):
@@ -386,7 +601,7 @@ def build_sessions(events: list[dict], borne_logs: dict[str, list[dict]]) -> dic
                 energy = None
 
             item = {
-                "session_id": tx_id,
+                "session_id": s.get("session_id"),
                 "start": start,
                 "end": end,
                 "duration_s": duration,
@@ -395,6 +610,7 @@ def build_sessions(events: list[dict], borne_logs: dict[str, list[dict]]) -> dic
                 "energy_kwh": energy,
                 "connector_id": s.get("connector_id"),
                 "id_tag": s.get("id_tag"),
+                "user": s.get("id_tag") or s.get("user"),
                 "meter_values": s.get("meter_values", []),
                 "events": s.get("events", []),
             }
@@ -489,7 +705,11 @@ def aggregate_session_meter_values(session: dict, borne_log_entries: list[dict])
 
     if not readings:
         session["charge_curve"] = []
-        session["kpis"] = {"total_kwh": session.get("energy_kwh"), "peak_kw": None, "avg_kw": None}
+        total_kwh = session.get("energy_kwh")
+        session["kpis"] = {"total_kwh": total_kwh, "peak_kw": None, "avg_kw": None}
+        if total_kwh is not None:
+            session["price"] = round(float(total_kwh) * BILLING_TARIFF_PER_KWH, 2)
+            session["currency"] = "dt"
         return session
 
     # sort readings by timestamp
@@ -571,6 +791,9 @@ def aggregate_session_meter_values(session: dict, borne_log_entries: list[dict])
         "peak_kw": (peak_power_w / 1000.0) if peak_power_w else None,
         "avg_kw": (avg_power_w / 1000.0) if avg_power_w else None,
     }
+    if energy_kwh is not None:
+        session["price"] = round(float(energy_kwh) * BILLING_TARIFF_PER_KWH, 2)
+        session["currency"] = "dt"
 
     return session
 
@@ -652,6 +875,22 @@ def build_cp_payload() -> dict:
             "metadata": m,
         }
 
+    registry = {str(record.get("cp_id")): record for record in read_charge_point_registry() if record.get("cp_id")}
+    charge_points = []
+    all_cp_ids = set(list(payload["general_info_by_cp"].keys()) + list(registry.keys()) + list(snapshot.get("last_seen", {}).keys()))
+    for cp_id in sorted(all_cp_ids):
+        charge_points.append(
+            build_charge_point_view(
+                cp_id,
+                snapshot,
+                payload["general_info_by_cp"].get(cp_id, {}),
+                registry.get(cp_id),
+            )
+        )
+    payload["charge_points"] = charge_points
+    payload["registered_charge_points"] = list(registry.values())
+    payload["users"] = [public_user(user) for user in read_users()]
+
     sessions = build_sessions(payload["events"], payload["borne_logs"])
     # enrich sessions with meter-values aggregation and KPIs
     sessions = aggregate_sessions_metrics(sessions, payload["borne_logs"])
@@ -673,6 +912,15 @@ def build_cp_payload() -> dict:
         "total_kwh": total_kwh,
         "kwh_per_cp": kwh_per_cp,
     }
+
+    billing = {
+        "tariff_per_kwh": BILLING_TARIFF_PER_KWH,
+        "currency": "dt",
+        "total_energy_kwh": total_kwh,
+        "estimated_revenue": round(total_kwh * BILLING_TARIFF_PER_KWH, 2),
+        "revenue_per_cp": {cp_id: round(kwh * BILLING_TARIFF_PER_KWH, 2) for cp_id, kwh in kwh_per_cp.items()},
+    }
+    payload["billing"] = billing
 
     payload.update(snapshot)
     return payload
@@ -893,14 +1141,16 @@ async def login(request: Request):
 
     email = payload.email.strip()
     password = payload.password
+    redirect_url = request.query_params.get("next") or "/cityos"
 
-    if not hmac.compare_digest(email, AUTH_EMAIL) or not hmac.compare_digest(password, AUTH_PASSWORD):
+    user = authenticate_user(email, password)
+    if user is None:
         if wants_json:
             return JSONResponse({"detail": "Invalid email or password"}, status_code=status.HTTP_401_UNAUTHORIZED)
 
-        return RedirectResponse(url="/?login=failed", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url="/login?login=failed", status_code=status.HTTP_303_SEE_OTHER)
 
-    return build_auth_response(email, wants_json)
+    return build_auth_response(user["email"], wants_json, redirect_url=redirect_url)
 
 
 @app.post("/api/auth/logout")
@@ -912,8 +1162,8 @@ def logout():
 
 @app.get("/api/auth/me")
 def auth_me(request: Request):
-    email = require_authenticated_email(request)
-    return JSONResponse({"authenticated": True, "email": email})
+    user = require_authenticated_user(request)
+    return JSONResponse({"authenticated": True, **public_user(user)})
 
 
 @app.get("/health")
@@ -921,7 +1171,7 @@ def health():
     return JSONResponse(
         {
             "status": "ok",
-            "service": "CityOs backend",
+            "service": "Rback backend",
             "api": "/api/cp",
         }
     )
@@ -929,13 +1179,73 @@ def health():
 
 @app.get("/")
 def root(request: Request):
+    return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@app.get("/login")
+def login_page(request: Request):
+    if get_authenticated_user(request) is not None:
+        return RedirectResponse(url="/cityos", status_code=status.HTTP_303_SEE_OTHER)
+
+    login_failed = request.query_params.get("login") == "failed"
+    error_message = "Invalid email or password" if login_failed else ""
+    html = f"""<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Rback Login</title>
+        <meta name="description" content="Rback login page" />
+        <link rel="canonical" href="/login" />
+        <link rel="stylesheet" href="/frontend/styles.css" />
+    </head>
+    <body>
+        <div class="bg-orb bg-orb-a"></div>
+        <div class="bg-orb bg-orb-b"></div>
+        <section class="login-screen shell">
+            <div class="login-card single-column">
+                <div class="login-copy">
+                    <p class="eyebrow">Rback</p>
+                    <h1>Sign in to Rback</h1>
+                    <p class="lede">Access the live OCPP dashboard, remote actions, and session activity from a single secure entry point.</p>
+                </div>
+                <form id="login-form" class="login-form" action="/api/auth/login?next=/cityos" method="post">
+                    <label>Email <input name="email" type="email" autocomplete="email" value="{AUTH_EMAIL}" required /></label>
+                    <label>Password <input name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required /></label>
+                    <p class="login-error" aria-live="polite">{error_message}</p>
+                    <button class="btn btn-primary login-submit" type="submit">Sign in</button>
+                    <p class="note login-note">Use the provided credentials to continue.</p>
+                </form>
+            </div>
+        </section>
+    </body>
+</html>"""
+    return HTMLResponse(html)
+
+
+@app.get("/cityos")
+def cityos_dashboard(request: Request):
+    if get_authenticated_user(request) is None:
+        return RedirectResponse(url="/login?next=/cityos", status_code=status.HTTP_303_SEE_OTHER)
+
+    if FRONTEND_DASHBOARD_FILE.exists():
+        return HTMLResponse(FRONTEND_DASHBOARD_FILE.read_text(encoding="utf-8"))
+
+    return HTMLResponse(FRONTEND_INDEX_FILE.read_text(encoding="utf-8"))
+
+
+def serve_dashboard(request: Request):
     email = request.query_params.get("email")
     password = request.query_params.get("password")
     if email is not None and password is not None:
-        if hmac.compare_digest(email.strip(), AUTH_EMAIL) and hmac.compare_digest(password, AUTH_PASSWORD):
-            return build_auth_response(email.strip(), wants_json=False)
+        user = authenticate_user(email.strip(), password)
+        if user is not None:
+            return build_auth_response(user["email"], wants_json=False)
 
-        return RedirectResponse(url="/?login=failed", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url="/login?login=failed", status_code=status.HTTP_303_SEE_OTHER)
+
+    if get_authenticated_user(request) is None:
+        return RedirectResponse(url="/login?next=/cityos", status_code=status.HTTP_303_SEE_OTHER)
 
     if FRONTEND_INDEX_FILE.exists():
         return HTMLResponse(FRONTEND_INDEX_FILE.read_text(encoding="utf-8"))
@@ -943,7 +1253,7 @@ def root(request: Request):
     return JSONResponse(
         {
             "status": "ok",
-            "service": "CityOs backend",
+            "service": "Rback backend",
             "api": "/api/cp",
         }
     )
@@ -990,6 +1300,90 @@ def get_cp_state(cp_id: str | None = None):
         }
 
     return JSONResponse(filtered_payload)
+
+
+@app.get("/api/users")
+def list_users(request: Request):
+    require_role(request, USER_MANAGEMENT_ROLES)
+    return JSONResponse({"users": [public_user(user) for user in read_users()]})
+
+
+@app.post("/api/users")
+def create_user(request: Request, user: dict):
+    require_role(request, USER_MANAGEMENT_ROLES)
+    email = str(user.get("email") or "").strip().lower()
+    password = str(user.get("password") or "").strip()
+    role = str(user.get("role") or "operator").strip().lower()
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="email and password are required")
+
+    if role not in {"admin", "steg", "operator"}:
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    users = read_users()
+    if any(str(existing.get("email", "")).strip().lower() == email for existing in users):
+        raise HTTPException(status_code=409, detail="User already exists")
+
+    record = {
+        "id": f"user-{len(users) + 1}",
+        "email": email,
+        "password_hash": hash_password(password),
+        "role": role,
+        "name": user.get("name") or email,
+        "active": bool(user.get("active", True)),
+        "created_at": utc_now_iso(),
+    }
+    users.append(record)
+    write_users(users)
+    return JSONResponse({"result": "ok", "user": public_user(record)})
+
+
+@app.get("/api/charge-points")
+def list_charge_points(request: Request):
+    require_authenticated_user(request)
+    payload = build_cp_payload()
+    return JSONResponse({"charge_points": payload.get("charge_points", [])})
+
+
+@app.post("/api/charge-points")
+def create_charge_point(request: Request, charge_point: dict):
+    require_role(request, FULL_MANAGEMENT_ROLES)
+    record = upsert_charge_point_record(charge_point)
+    return JSONResponse({"result": "ok", "charge_point": record})
+
+
+@app.post("/api/charge-points/{cp_id}/tariff")
+def update_charge_point_tariff_endpoint(request: Request, cp_id: str, payload: dict):
+    require_role(request, SUPERVISION_ROLES)
+    if not cp_id:
+        raise HTTPException(status_code=400, detail="cp_id is required")
+
+    tariff_per_kwh = payload.get("tariff_per_kwh")
+    if tariff_per_kwh is None:
+        raise HTTPException(status_code=400, detail="tariff_per_kwh is required")
+
+    updated = update_charge_point_tariff(cp_id, float(tariff_per_kwh))
+    return JSONResponse({"result": "ok", "charge_point": updated})
+
+
+@app.get("/api/sessions")
+def list_sessions(request: Request):
+    require_authenticated_user(request)
+    payload = build_cp_payload()
+    sessions = []
+    for cp_id, sess_list in (payload.get("sessions") or {}).items():
+        for session in sess_list:
+            sessions.append({"cp_id": cp_id, **session})
+    return JSONResponse({"sessions": sessions})
+
+
+@app.get("/api/billing/summary")
+def billing_summary(request: Request):
+    require_authenticated_user(request)
+    payload = build_cp_payload()
+    summary = payload.get("billing") or {}
+    return JSONResponse(summary)
 
 
 @app.post("/api/cp/{cp_id}/force_start")

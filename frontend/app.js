@@ -4,6 +4,7 @@ const state = {
   refreshTimer: null,
   isAuthenticated: false,
   commandsWired: false,
+  currentUser: null,
 };
 
 const els = {
@@ -31,6 +32,18 @@ const els = {
   metricTotalMessages: document.getElementById('metric-total-messages'),
   metricTotalEnergy: document.getElementById('metric-total-energy'),
   metricOpenTransactions: document.getElementById('metric-open-transactions'),
+  metricRegisteredCps: document.getElementById('metric-registered-cps'),
+  metricEstimatedRevenue: document.getElementById('metric-estimated-revenue'),
+  roleBadge: document.getElementById('role-badge'),
+  roleDescription: document.getElementById('role-description'),
+  administrationPanel: document.getElementById('charge-point-card')?.closest('.card.full-span') || document.querySelector('#charge-point-card')?.parentElement,
+  billingPanel: document.getElementById('billing-card'),
+  registeredCpList: document.getElementById('registered-cp-list'),
+  userList: document.getElementById('user-list'),
+  billingSummary: document.getElementById('billing-summary'),
+  chargePointForm: document.getElementById('charge-point-form'),
+  userForm: document.getElementById('user-form'),
+  adminCards: document.querySelectorAll('.admin-card'),
 };
 
 const templates = {
@@ -59,13 +72,109 @@ function formatValue(value) {
   return String(value);
 }
 
+function formatMoney(value, currency = 'dt') {
+  const amount = Number(value || 0);
+  const normalizedCurrency = String(currency || 'dt').trim().toUpperCase();
+  const formatCurrency = normalizedCurrency === 'DT' ? 'TND' : normalizedCurrency;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: formatCurrency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+function isManagementRole(role) {
+  return ['admin', 'steg'].includes(String(role || '').toLowerCase());
+}
+
+function getRoleProfile(role) {
+  const normalizedRole = String(role || 'operator').toLowerCase();
+  if (normalizedRole === 'admin') {
+    return {
+      role: 'admin',
+      label: 'Admin',
+      description: 'Full access: monitoring, remote control, charge-point management, billing, and users.',
+      canManageChargePoints: true,
+      canEditTariff: true,
+      canManageUsers: true,
+      canSeeBilling: true,
+    };
+  }
+
+  if (normalizedRole === 'steg') {
+    return {
+      role: 'steg',
+      label: 'Supervision',
+      description: 'Supervision access: monitoring, remote control, charge-point data, billing, and tariff updates.',
+      canManageChargePoints: true,
+      canEditTariff: true,
+      canManageUsers: false,
+      canSeeBilling: true,
+    };
+  }
+
+  return {
+    role: 'operator',
+    label: 'Operator',
+    description: 'Operations access: live monitoring and remote commands only.',
+    canManageChargePoints: false,
+    canEditTariff: false,
+    canManageUsers: false,
+    canSeeBilling: false,
+  };
+}
+
+function setFieldVisibility(form, fieldName, visible) {
+  if (!form) return;
+  const field = form.querySelector(`[name="${fieldName}"]`);
+  if (!field || !field.parentElement) return;
+  field.disabled = !visible;
+  field.parentElement.hidden = !visible;
+}
+
+function setChargePointFormMode(profile) {
+  if (!els.chargePointForm) return;
+
+  const title = document.querySelector('#charge-point-card h4');
+  const note = document.querySelector('#charge-point-card .note');
+  const submitButton = els.chargePointForm.querySelector('button[type="submit"]');
+
+  if (profile.role === 'steg') {
+    if (title) title.textContent = 'Update Tariff';
+    if (note) note.textContent = 'Read-only charge-point supervision. Only tariff changes are allowed.';
+    setFieldVisibility(els.chargePointForm, 'cp_id', true);
+    setFieldVisibility(els.chargePointForm, 'tariff_per_kwh', true);
+    setFieldVisibility(els.chargePointForm, 'label', false);
+    setFieldVisibility(els.chargePointForm, 'site', false);
+    setFieldVisibility(els.chargePointForm, 'connector_count', false);
+    setFieldVisibility(els.chargePointForm, 'notes', false);
+    if (submitButton) submitButton.textContent = 'Update Tariff';
+    return;
+  }
+
+  if (title) title.textContent = 'Register Charge Point';
+  if (note) note.textContent = 'Adds offline or upcoming chargers to the fleet';
+  setFieldVisibility(els.chargePointForm, 'cp_id', true);
+  setFieldVisibility(els.chargePointForm, 'label', true);
+  setFieldVisibility(els.chargePointForm, 'site', true);
+  setFieldVisibility(els.chargePointForm, 'connector_count', true);
+  setFieldVisibility(els.chargePointForm, 'tariff_per_kwh', true);
+  setFieldVisibility(els.chargePointForm, 'notes', true);
+  if (submitButton) submitButton.textContent = 'Save Charge Point';
+}
+
 function updateAuthView() {
   const loggedIn = state.isAuthenticated;
-  els.loginScreen.hidden = loggedIn;
-  els.appShell.hidden = !loggedIn;
+  if (els.loginScreen) {
+    els.loginScreen.hidden = loggedIn;
+  }
+  if (els.appShell) {
+    els.appShell.hidden = !loggedIn;
+  }
   document.body.classList.toggle('auth-locked', !loggedIn);
 
-  if (!loggedIn) {
+  if (!loggedIn && els.loginError && els.loginPassword) {
     els.loginError.textContent = '';
     els.loginPassword.value = '';
     els.loginPassword.focus();
@@ -75,6 +184,44 @@ function updateAuthView() {
 function setAuthenticated(isAuthenticated) {
   state.isAuthenticated = isAuthenticated;
   updateAuthView();
+}
+
+function setCurrentUser(user) {
+  state.currentUser = user || null;
+  const profile = getRoleProfile(state.currentUser?.role);
+
+  document.body.classList.toggle('admin-user', profile.role === 'admin');
+  document.body.classList.toggle('operator-user', profile.role === 'operator');
+  document.body.classList.toggle('steg-user', profile.role === 'steg');
+
+  if (els.roleBadge) {
+    els.roleBadge.textContent = profile.label;
+  }
+
+  if (els.roleDescription) {
+    els.roleDescription.textContent = profile.description;
+  }
+
+  if (els.administrationPanel) {
+    els.administrationPanel.hidden = !profile.canManageChargePoints && !profile.canManageUsers;
+  }
+
+  if (els.billingPanel) {
+    els.billingPanel.hidden = !profile.canSeeBilling;
+  }
+
+  if (els.chargePointForm) {
+    els.chargePointForm.hidden = !profile.canManageChargePoints;
+    setChargePointFormMode(profile);
+  }
+
+  if (els.userForm) {
+    els.userForm.hidden = !profile.canManageUsers;
+  }
+
+  if (els.userList) {
+    els.userList.hidden = !profile.canManageUsers;
+  }
 }
 
 function handleSessionExpired(message = 'Session expired. Please sign in again.') {
@@ -92,6 +239,10 @@ function stopAutoRefresh() {
 }
 
 async function startDashboard() {
+  if (!els.appShell) {
+    return;
+  }
+
   if (!state.commandsWired) {
     wireCommands();
     state.commandsWired = true;
@@ -129,11 +280,15 @@ async function startDashboard() {
 async function checkSession() {
   const response = await fetch('/api/auth/me');
   if (!response.ok) {
-    return false;
+    return null;
   }
 
   const payload = await response.json();
-  return payload?.authenticated === true;
+  if (payload?.authenticated === true) {
+    return payload;
+  }
+
+  return null;
 }
 
 async function signIn(email, password) {
@@ -148,6 +303,9 @@ async function signIn(email, password) {
     throw new Error(payload.detail || 'Invalid email or password.');
   }
 
+  if (payload?.authenticated === true || payload?.email) {
+    setCurrentUser(payload);
+  }
   setAuthenticated(true);
   return payload;
 }
@@ -156,6 +314,8 @@ async function signOut() {
   await fetch('/api/auth/logout', { method: 'POST' });
   stopAutoRefresh();
   state.data = null;
+  state.currentUser = null;
+  setCurrentUser(null);
   setAuthenticated(false);
 }
 
@@ -187,14 +347,31 @@ function extractChargePointIds(data) {
     data?.snapshot?.message_count_by_cp,
     data?.snapshot?.open_transactions_by_cp,
     data?.sessions,
+    data?.charge_points,
+    data?.registered_charge_points,
   ];
 
   sources.forEach((source) => {
     if (!source) return;
+    if (Array.isArray(source)) {
+      source.forEach((item) => {
+        if (item?.cp_id) {
+          ids.add(item.cp_id);
+        }
+      });
+      return;
+    }
+
     Object.keys(source).forEach((key) => ids.add(key));
   });
 
   return [...ids].sort((a, b) => a.localeCompare(b));
+}
+
+function getChargePointView(data, cpId) {
+  return data?.charge_points?.find((item) => item.cp_id === cpId)
+    || data?.registered_charge_points?.find((item) => item.cp_id === cpId)
+    || {};
 }
 
 function getSelectedChargePointId(data) {
@@ -211,11 +388,15 @@ function updateGlobalStatus(data) {
   const totalMessages = data?.snapshot?.metrics?.total_messages ?? 0;
   const totalEnergy = data?.energy?.total_kwh ?? 0;
   const openTransactions = Object.keys(data?.snapshot?.open_transactions_by_cp || {}).length;
+  const registeredCps = data?.charge_points?.length ?? 0;
+  const estimatedRevenue = data?.billing?.estimated_revenue ?? 0;
 
   els.metricActiveConnections.textContent = String(activeConnections);
   els.metricTotalMessages.textContent = String(totalMessages);
   els.metricTotalEnergy.textContent = `${Number(totalEnergy).toFixed(2)} kWh`;
   els.metricOpenTransactions.textContent = String(openTransactions);
+  els.metricRegisteredCps.textContent = String(registeredCps);
+  els.metricEstimatedRevenue.textContent = formatMoney(estimatedRevenue, data?.billing?.currency || 'dt');
 
   const hasData = totalConnections > 0 || totalMessages > 0 || Object.keys(data?.events || {}).length > 0;
   els.globalStatus.className = `status-dot ${activeConnections > 0 ? 'status-connected' : hasData ? 'status-warning' : 'status-unknown'}`;
@@ -244,13 +425,14 @@ function renderCpList(data, selectedCpId) {
     const subtitle = template.querySelector('.cp-item-subtitle');
     const badge = template.querySelector('.cp-item-badge');
     const generalInfo = data?.general_info_by_cp?.[cpId] || {};
-    const status = data?.snapshot?.status_by_cp?.[cpId]?.status || generalInfo?.cpms_connection_status || 'Unknown';
+    const cpView = getChargePointView(data, cpId);
+    const status = cpView.status || data?.snapshot?.status_by_cp?.[cpId]?.status || generalInfo?.cpms_connection_status || 'Unknown';
     const isActive = cpId === selectedCpId;
-    const connectionState = generalInfo?.cpms_connection_status === 'connected' ? 'Connected' : data?.snapshot?.last_seen?.[cpId] ? 'Seen' : 'Idle';
+    const connectionState = cpView.connection_state === 'connected' ? 'Connected' : 'Offline';
 
     button.classList.toggle('active', isActive);
-    title.textContent = cpId;
-    subtitle.textContent = `${status} · ${generalInfo.model || 'No model'} · ${generalInfo.serial_number || 'No serial'}`;
+    title.textContent = cpView.label || cpId;
+    subtitle.textContent = `${status} · ${cpView.model || generalInfo.model || 'No model'} · ${cpView.serial_number || generalInfo.serial_number || 'No serial'}`;
     badge.textContent = connectionState;
 
     button.addEventListener('click', () => {
@@ -280,23 +462,27 @@ function pickEntries(source, keys) {
 
 function renderDetail(data, selectedCpId) {
   const info = data?.general_info_by_cp?.[selectedCpId] || {};
+  const cpView = getChargePointView(data, selectedCpId);
   const status = data?.snapshot?.status_by_cp?.[selectedCpId] || {};
   const meter = data?.snapshot?.last_meter_values_by_cp?.[selectedCpId] || {};
   const openTx = data?.snapshot?.open_transactions_by_cp?.[selectedCpId] || {};
   const lastSeen = data?.snapshot?.last_seen?.[selectedCpId] || data?.last_seen?.[selectedCpId] || null;
 
   els.selectedCpLabel.textContent = selectedCpId || '-';
-  els.detailTitle.textContent = selectedCpId ? `Charge Point ${selectedCpId}` : 'Choose a charge point';
+  els.detailTitle.textContent = selectedCpId ? (cpView.label || `Charge Point ${selectedCpId}`) : 'Choose a charge point';
   els.detailStatus.textContent = selectedCpId
-    ? (info.cpms_connection_status === 'connected' ? 'Connected' : 'Disconnected')
+    ? (cpView.connection_state === 'connected' ? 'Connected' : 'Offline')
     : 'Idle';
-  els.detailStatus.className = `badge ${info.cpms_connection_status === 'connected' ? 'badge-success' : 'badge-neutral'}`;
+  els.detailStatus.className = `badge ${cpView.connection_state === 'connected' ? 'badge-success' : 'badge-neutral'}`;
 
   renderKeyValues(els.generalInfo, [
+    ['Label', cpView.label || selectedCpId],
+    ['Site', cpView.site],
     ['Manufacturer', info.manufacturer],
     ['Model', info.model],
     ['Serial Number', info.serial_number],
     ['Firmware', info.firmware_version],
+    ['Tariff / kWh', cpView.tariff_per_kwh ? `${Number(cpView.tariff_per_kwh).toFixed(2)} dt` : '—'],
     ['IP Address', info.ip_address],
     ['IMSI', info.imsi],
     ['ICCID', info.iccid],
@@ -305,7 +491,7 @@ function renderDetail(data, selectedCpId) {
   ]);
 
   renderKeyValues(els.liveState, [
-    ['Connection', info.cpms_connection_status],
+    ['Connection', cpView.connection_state || info.cpms_connection_status],
     ['Status', status.status],
     ['Error Code', status.error_code],
     ['Connector ID', status.connector_id],
@@ -345,10 +531,83 @@ function renderSessions(data, selectedCpId) {
       `Energy: ${session.energy_kwh ? `${Number(session.energy_kwh).toFixed(3)} kWh` : '—'}`,
       `Peak: ${session.kpis?.peak_kw ? `${Number(session.kpis.peak_kw).toFixed(2)} kW` : '—'}`,
       `Average: ${session.kpis?.avg_kw ? `${Number(session.kpis.avg_kw).toFixed(2)} kW` : '—'}`,
+      `Price: ${session.price !== undefined ? formatMoney(session.price, session.currency || 'dt') : '—'}`,
+      `User: ${session.user || session.id_tag || '—'}`,
     ].join(' · ');
 
     els.sessionList.appendChild(template);
   });
+}
+
+function renderEntityList(container, items, emptyMessage, renderItem) {
+  container.innerHTML = '';
+
+  if (!items.length) {
+    container.innerHTML = `<article class="timeline-item"><p class="timeline-body">${emptyMessage}</p></article>`;
+    return;
+  }
+
+  items.forEach((item) => {
+    const element = document.createElement('article');
+    element.className = 'entity-item';
+    element.innerHTML = renderItem(item);
+    container.appendChild(element);
+  });
+}
+
+function renderAdministration(data) {
+  const chargePoints = data?.charge_points || [];
+  const users = data?.users || [];
+  const billing = data?.billing || {};
+  const profile = getRoleProfile(state.currentUser?.role);
+
+  if (!profile.canManageChargePoints) {
+    els.registeredCpList.innerHTML = '<article class="timeline-item"><p class="timeline-body">Charge-point management is not available for this role.</p></article>';
+  } else {
+    renderEntityList(
+      els.registeredCpList,
+      chargePoints,
+      'No registered charge points yet.',
+      (cp) => `
+        <div class="entity-item-head">
+          <strong>${formatValue(cp.label || cp.cp_id)}</strong>
+          <span class="badge ${cp.connection_state === 'connected' ? 'badge-success' : 'badge-neutral'}">${formatValue(cp.status || cp.connection_state)}</span>
+        </div>
+        <p class="entity-item-body">${formatValue(cp.cp_id)} · ${formatValue(cp.site || 'No site')} · ${formatValue(cp.tariff_per_kwh ? `${Number(cp.tariff_per_kwh).toFixed(2)} dt / kWh` : 'Tariff not set')}</p>
+      `,
+    );
+  }
+
+  if (profile.canManageUsers) {
+    renderEntityList(
+      els.userList,
+      users,
+      'No users defined yet.',
+      (user) => `
+        <div class="entity-item-head">
+          <strong>${formatValue(user.email)}</strong>
+          <span class="badge ${isManagementRole(user.role) ? 'badge-warning' : 'badge-neutral'}">${user.role === 'steg' ? 'STEG' : formatValue(user.role)}</span>
+        </div>
+        <p class="entity-item-body">${formatValue(user.name || user.email)} · ${user.active ? 'Active' : 'Disabled'}</p>
+      `,
+    );
+  } else {
+    els.userList.innerHTML = '<article class="timeline-item"><p class="timeline-body">User management is not available for this role.</p></article>';
+  }
+
+  renderKeyValues(els.billingSummary, [
+    ['Tariff per kWh', billing.tariff_per_kwh !== undefined ? `${Number(billing.tariff_per_kwh).toFixed(2)} dt` : '—'],
+    ['Currency', billing.currency || 'dt'],
+    ['Total Energy', billing.total_energy_kwh !== undefined ? `${Number(billing.total_energy_kwh).toFixed(3)} kWh` : '—'],
+    ['Estimated Revenue', billing.estimated_revenue !== undefined ? formatMoney(billing.estimated_revenue, billing.currency || 'dt') : '—'],
+  ]);
+
+  if (profile.role === 'steg') {
+    const billingTitle = document.querySelector('#billing-card .panel-head h3');
+    const billingNote = document.querySelector('#billing-card .panel-head .note');
+    if (billingTitle) billingTitle.textContent = 'Supervision';
+    if (billingNote) billingNote.textContent = 'Read-only billing summary with tariff supervision.';
+  }
 }
 
 function renderEvents(data, selectedCpId) {
@@ -376,6 +635,80 @@ function renderEvents(data, selectedCpId) {
 
     els.eventList.appendChild(template);
   });
+}
+
+function wireAdministrationForms() {
+  if (els.chargePointForm) {
+    els.chargePointForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const formData = new FormData(els.chargePointForm);
+      const profile = getRoleProfile(state.currentUser?.role);
+      const body = {
+        cp_id: String(formData.get('cp_id') || '').trim(),
+        label: String(formData.get('label') || '').trim(),
+        site: String(formData.get('site') || '').trim(),
+        connector_count: Number(formData.get('connector_count') || 1),
+        tariff_per_kwh: formData.get('tariff_per_kwh') ? Number(formData.get('tariff_per_kwh')) : null,
+        notes: String(formData.get('notes') || '').trim(),
+      };
+
+      try {
+        const endpoint = profile.role === 'steg'
+          ? `/api/charge-points/${encodeURIComponent(body.cp_id)}/tariff`
+          : '/api/charge-points';
+        const requestBody = profile.role === 'steg'
+          ? { tariff_per_kwh: body.tariff_per_kwh }
+          : body;
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.detail || 'Unable to save charge point');
+        }
+        els.chargePointForm.reset();
+        showToast(profile.role === 'steg'
+          ? `Tariff updated for ${payload.charge_point.cp_id}`
+          : `Charge point ${payload.charge_point.cp_id} saved`, 'success');
+        await loadData();
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    });
+  }
+
+  if (els.userForm) {
+    els.userForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const formData = new FormData(els.userForm);
+      const body = {
+        email: String(formData.get('email') || '').trim(),
+        name: String(formData.get('name') || '').trim(),
+        password: String(formData.get('password') || ''),
+        role: String(formData.get('role') || 'operator').trim(),
+      };
+
+      try {
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.detail || 'Unable to create user');
+        }
+        els.userForm.reset();
+        showToast(`User ${payload.user.email} created`, 'success');
+        await loadData();
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    });
+  }
 }
 
 function wireCommand(formId, buildUrl, bodyBuilder = null) {
@@ -488,6 +821,7 @@ function renderAll(data) {
   updateGlobalStatus(data);
   renderCpList(data, selectedCpId);
   renderDetail(data, selectedCpId);
+  renderAdministration(data);
   renderSessions(data, selectedCpId);
   renderEvents(data, selectedCpId);
 }
@@ -495,54 +829,71 @@ function renderAll(data) {
 async function bootstrap() {
   updateAuthView();
 
-  els.loginForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
+  if (els.loginForm) {
+    els.loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
 
-    const email = els.loginEmail.value.trim();
-    const password = els.loginPassword.value;
+      const email = els.loginEmail.value.trim();
+      const password = els.loginPassword.value;
 
-    els.loginError.textContent = '';
-    els.loginEmail.disabled = true;
-    els.loginPassword.disabled = true;
+      els.loginError.textContent = '';
+      els.loginEmail.disabled = true;
+      els.loginPassword.disabled = true;
 
-    try {
-      await signIn(email, password);
-      await startDashboard();
-    } catch (error) {
-      setAuthenticated(false);
-      els.loginError.textContent = error.message || 'Invalid email or password.';
-    } finally {
-      els.loginEmail.disabled = false;
-      els.loginPassword.disabled = false;
-    }
-  });
+      try {
+        await signIn(email, password);
+        window.location.replace('/cityos');
+      } catch (error) {
+        setAuthenticated(false);
+        els.loginError.textContent = error.message || 'Invalid email or password.';
+      } finally {
+        els.loginEmail.disabled = false;
+        els.loginPassword.disabled = false;
+      }
+    });
+  }
 
-  els.logoutBtn.addEventListener('click', async () => {
-    await signOut();
-  });
+  if (els.logoutBtn) {
+    els.logoutBtn.addEventListener('click', async () => {
+      await signOut();
+      window.location.replace('/login');
+    });
+  }
 
   if (!state.commandsWired) {
     wireCommands();
     state.commandsWired = true;
   }
 
-  els.refreshBtn.addEventListener('click', async () => {
-    els.refreshBtn.disabled = true;
-    try {
-      await loadData();
-      showToast('Dashboard refreshed', 'success');
-    } catch (error) {
-      showToast(error.message, 'error');
-    } finally {
-      els.refreshBtn.disabled = false;
-    }
-  });
+  wireAdministrationForms();
+
+  if (els.refreshBtn) {
+    els.refreshBtn.addEventListener('click', async () => {
+      els.refreshBtn.disabled = true;
+      try {
+        await loadData();
+        showToast('Dashboard refreshed', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        els.refreshBtn.disabled = false;
+      }
+    });
+  }
 
   try {
-    const sessionActive = await checkSession();
-    setAuthenticated(sessionActive);
-    if (sessionActive) {
-      await startDashboard();
+    const sessionUser = await checkSession();
+    if (sessionUser) {
+      setCurrentUser(sessionUser);
+      setAuthenticated(true);
+      if (els.appShell) {
+        await startDashboard();
+      } else {
+        window.location.replace('/cityos');
+      }
+    } else {
+      setCurrentUser(null);
+      setAuthenticated(false);
     }
   } catch (error) {
     console.error(error);

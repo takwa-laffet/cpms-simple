@@ -1,0 +1,29 @@
+[
+  {
+    "id": "admin-1",
+    "email": "mvp@prelabel.tn",
+    "password_hash": "552f80c16f2d60a7494334f9f90e5db4e8229adc671e068fe6b6e1f875596249",
+    "role": "admin",
+    "name": "Rback Admin",
+    "active": true,
+    "created_at": "2026-05-22T21:11:30.643721+00:00"
+  },
+  {
+    "id": "user-2",
+    "email": "steg-0b1e72c1@rback.local",
+    "password_hash": "552f80c16f2d60a7494334f9f90e5db4e8229adc671e068fe6b6e1f875596249",
+    "role": "steg",
+    "name": "STEG (Société tunisienne de l'électricité et du gaz)",
+    "active": true,
+    "created_at": "2026-05-22T21:44:47.858431+00:00"
+  },
+  {
+    "id": "user-3",
+    "email": "operator@rback.local",
+    "password_hash": "552f80c16f2d60a7494334f9f90e5db4e8229adc671e068fe6b6e1f875596249",
+    "role": "operator",
+    "name": "Rback Operator",
+    "active": true,
+    "created_at": "2026-05-22T22:20:00.000000+00:00"
+  }
+]
