@@ -61,7 +61,7 @@ FRONTEND_INDEX_FILE = FRONTEND_DIR / "index.html"
 AUTH_COOKIE_NAME = "cpms_auth"
 AUTH_EMAIL = os.environ.get("CPMS_LOGIN_EMAIL", "mvp@prelabel.tn")
 AUTH_PASSWORD = os.environ.get("CPMS_LOGIN_PASSWORD", "Cpms_Secure#48Tz@2026")
-AUTH_SECRET_KEY = os.environ.get("AUTH_SECRET_KEY", "cpms-simple-dev-secret")
+AUTH_SECRET_KEY = os.environ.get("AUTH_SECRET_KEY", "cityos-dev-secret")
 AUTH_SESSION_TTL_SECONDS = int(os.environ.get("AUTH_SESSION_TTL_SECONDS", "86400"))
 
 
