@@ -118,55 +118,55 @@
                 <h3>Remote Commands</h3>
               </div>
 
-              <div class="command-grid">
-                <form id="force-start-form" class="command-card">
-                  <h4>Start</h4>
-                  <p class="note">Tries a real charger start first, then falls back to CPMS tracking.</p>
-                  <label>Connector ID <input name="connector_id" type="number" min="1" value="1" /></label>
-                  <label>Meter Start <input name="meter_start" type="number" min="0" value="0" /></label>
-                  <button class="btn btn-primary" type="submit">Start</button>
-                </form>
+<div class="command-grid">
+                 <form id="force-start-form" class="command-card">
+                   <h4>Start</h4>
+                   <p class="note">Tries a real charger start first, then falls back to CPMS tracking.</p>
+                   <label>Connector ID <input name="connector_id" type="number" min="1" value="1" /></label>
+                   <label>Meter Start <input name="meter_start" type="number" min="0" value="0" /></label>
+                   <button class="btn btn-primary" type="submit">Start</button>
+                 </form>
 
-                <form id="force-stop-form" class="command-card">
-                  <h4>Force Stop</h4>
-                  <label>Transaction ID <input name="transaction_id" type="number" min="1" placeholder="1" /></label>
-                  <label>Meter Stop <input name="meter_stop" type="number" min="0" value="0" /></label>
-                  <button class="btn btn-primary" type="submit">Stop</button>
-                </form>
+                 <form id="force-stop-form" class="command-card">
+                   <h4>Force Stop</h4>
+                   <label>Transaction ID <input name="transaction_id" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Auto" /></label>
+                   <label>Meter Stop <input name="meter_stop" type="number" min="0" value="0" /></label>
+                   <button class="btn btn-primary" type="submit">Stop</button>
+                 </form>
 
-                <form id="remote-start-form" class="command-card">
-                  <h4>Remote Start</h4>
-                  <label>Connector ID <input name="connector_id" type="number" min="1" placeholder="1" /></label>
-                  <label>id_tag <input name="id_tag" type="text" placeholder="REMOTE_START" /></label>
-                  <button class="btn btn-primary" type="submit">Send</button>
-                </form>
+                 <form id="remote-start-form" class="command-card">
+                   <h4>Remote Start</h4>
+                   <label>Connector ID <input name="connector_id" type="number" min="1" placeholder="1" /></label>
+                   <label>id_tag <input name="id_tag" type="text" placeholder="REMOTE_START" /></label>
+                   <button class="btn btn-primary" type="submit">Send</button>
+                 </form>
 
-                <form id="remote-stop-form" class="command-card">
-                  <h4>Remote Stop</h4>
-                  <p class="note">Uses the open transaction automatically when you leave the field empty.</p>
-                  <label>Transaction ID (optional) <input name="transaction_id" type="number" min="1" placeholder="Auto" /></label>
-                  <button class="btn btn-primary" type="submit">Send</button>
-                </form>
+                 <form id="remote-stop-form" class="command-card">
+                   <h4>Remote Stop</h4>
+                   <p class="note">Uses the open transaction automatically when you leave the field empty.</p>
+                   <label>Transaction ID (optional) <input name="transaction_id" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Auto" /></label>
+                   <button class="btn btn-primary" type="submit">Send</button>
+                 </form>
 
-                <form id="remote-reboot-form" class="command-card">
-                  <h4>Reboot</h4>
-                  <label>
-                    Reset Type
-                    <select name="reset_type">
-                      <option value="Soft">Soft</option>
-                      <option value="Hard">Hard</option>
-                    </select>
-                  </label>
-                  <button class="btn btn-warning" type="submit">Reboot</button>
-                </form>
+                 <form id="remote-reboot-form" class="command-card">
+                   <h4>Reboot</h4>
+                   <label>
+                     Reset Type
+                     <select name="reset_type">
+                       <option value="Soft">Soft</option>
+                       <option value="Hard">Hard</option>
+                     </select>
+                   </label>
+                   <button class="btn btn-warning" type="submit">Reboot</button>
+                 </form>
 
-                <form id="unlock-form" class="command-card">
-                  <h4>Unlock Connector</h4>
-                  <label>Connector ID <input name="connector_id" type="number" min="1" placeholder="1" /></label>
-                  <button class="btn btn-warning" type="submit">Unlock</button>
-                </form>
-              </div>
-            </div>
+                 <form id="unlock-form" class="command-card">
+                   <h4>Unlock Connector</h4>
+                   <label>Connector ID <input name="connector_id" type="number" min="1" placeholder="1" /></label>
+                   <button class="btn btn-warning" type="submit">Unlock</button>
+                 </form>
+               </div>
+             </div>
 
             <div class="card full-span">
               <div class="panel-head slim">
