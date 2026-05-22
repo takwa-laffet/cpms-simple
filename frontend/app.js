@@ -2,9 +2,18 @@ const state = {
   data: null,
   selectedCpId: new URLSearchParams(window.location.search).get('cp_id') || null,
   refreshTimer: null,
+  isAuthenticated: false,
+  commandsWired: false,
 };
 
 const els = {
+  loginScreen: document.getElementById('login-screen'),
+  appShell: document.getElementById('app-shell'),
+  loginForm: document.getElementById('login-form'),
+  loginEmail: document.getElementById('login-email'),
+  loginPassword: document.getElementById('login-password'),
+  loginError: document.getElementById('login-error'),
+  logoutBtn: document.getElementById('logout-btn'),
   refreshBtn: document.getElementById('refresh-btn'),
   globalStatus: document.getElementById('global-status'),
   globalStatusText: document.getElementById('global-status-text'),
@@ -48,6 +57,106 @@ function formatValue(value) {
   }
 
   return String(value);
+}
+
+function updateAuthView() {
+  const loggedIn = state.isAuthenticated;
+  els.loginScreen.hidden = loggedIn;
+  els.appShell.hidden = !loggedIn;
+  document.body.classList.toggle('auth-locked', !loggedIn);
+
+  if (!loggedIn) {
+    els.loginError.textContent = '';
+    els.loginPassword.value = '';
+    els.loginPassword.focus();
+  }
+}
+
+function setAuthenticated(isAuthenticated) {
+  state.isAuthenticated = isAuthenticated;
+  updateAuthView();
+}
+
+function handleSessionExpired(message = 'Session expired. Please sign in again.') {
+  stopAutoRefresh();
+  state.data = null;
+  setAuthenticated(false);
+  showToast(message, 'error');
+}
+
+function stopAutoRefresh() {
+  if (state.refreshTimer) {
+    window.clearInterval(state.refreshTimer);
+    state.refreshTimer = null;
+  }
+}
+
+async function startDashboard() {
+  if (!state.commandsWired) {
+    wireCommands();
+    state.commandsWired = true;
+  }
+
+  els.refreshBtn.disabled = false;
+  try {
+    await loadData();
+  } catch (error) {
+    if (error.message === 'Unauthorized') {
+      handleSessionExpired();
+      return;
+    }
+
+    els.globalStatus.className = 'status-dot status-danger';
+    els.globalStatusText.textContent = 'Unable to load backend data';
+    showToast(error.message, 'error');
+  }
+
+  stopAutoRefresh();
+  state.refreshTimer = window.setInterval(async () => {
+    try {
+      await loadData();
+    } catch (error) {
+      if (error.message === 'Unauthorized') {
+        handleSessionExpired();
+        return;
+      }
+
+      console.error(error);
+    }
+  }, 10000);
+}
+
+async function checkSession() {
+  const response = await fetch('/api/auth/me');
+  if (!response.ok) {
+    return false;
+  }
+
+  const payload = await response.json();
+  return payload?.authenticated === true;
+}
+
+async function signIn(email, password) {
+  const response = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.detail || 'Invalid email or password.');
+  }
+
+  setAuthenticated(true);
+  return payload;
+}
+
+async function signOut() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  stopAutoRefresh();
+  state.data = null;
+  setAuthenticated(false);
 }
 
 function toTitle(label) {
@@ -335,9 +444,9 @@ function wireCommands() {
   });
 
   wireCommand('remote-stop-form', (cpId, formData) => {
-    const params = new URLSearchParams({
-      transaction_id: formData.get('transaction_id') || '',
-    });
+    const params = new URLSearchParams();
+    const transactionId = formData.get('transaction_id');
+    if (transactionId) params.set('transaction_id', transactionId);
     return `/api/cp/${cpId}/remote_stop?${params.toString()}`;
   });
 
@@ -359,6 +468,10 @@ function wireCommands() {
 async function loadData() {
   const url = state.selectedCpId ? `/api/cp?cp_id=${encodeURIComponent(state.selectedCpId)}` : '/api/cp';
   const response = await fetch(url);
+  if (response.status === 401) {
+    throw new Error('Unauthorized');
+  }
+
   if (!response.ok) {
     throw new Error(`Failed to load dashboard data: ${response.status}`);
   }
@@ -380,7 +493,38 @@ function renderAll(data) {
 }
 
 async function bootstrap() {
-  wireCommands();
+  updateAuthView();
+
+  els.loginForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const email = els.loginEmail.value.trim();
+    const password = els.loginPassword.value;
+
+    els.loginError.textContent = '';
+    els.loginEmail.disabled = true;
+    els.loginPassword.disabled = true;
+
+    try {
+      await signIn(email, password);
+      await startDashboard();
+    } catch (error) {
+      setAuthenticated(false);
+      els.loginError.textContent = error.message || 'Invalid email or password.';
+    } finally {
+      els.loginEmail.disabled = false;
+      els.loginPassword.disabled = false;
+    }
+  });
+
+  els.logoutBtn.addEventListener('click', async () => {
+    await signOut();
+  });
+
+  if (!state.commandsWired) {
+    wireCommands();
+    state.commandsWired = true;
+  }
 
   els.refreshBtn.addEventListener('click', async () => {
     els.refreshBtn.disabled = true;
@@ -395,20 +539,14 @@ async function bootstrap() {
   });
 
   try {
-    await loadData();
-  } catch (error) {
-    els.globalStatus.className = 'status-dot status-danger';
-    els.globalStatusText.textContent = 'Unable to load backend data';
-    showToast(error.message, 'error');
-  }
-
-  state.refreshTimer = window.setInterval(async () => {
-    try {
-      await loadData();
-    } catch (error) {
-      console.error(error);
+    const sessionActive = await checkSession();
+    setAuthenticated(sessionActive);
+    if (sessionActive) {
+      await startDashboard();
     }
-  }, 10000);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 bootstrap();

@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CPMS Simple Dashboard</title>
+    <title>CityOs Dashboard</title>
     <meta
       name="description"
-      content="CPMS Simple dashboard for monitoring OCPP charge points and sending remote commands."
+      content="CityOs dashboard for monitoring OCPP charge points and sending remote commands."
     />
     <link rel="stylesheet" href="/frontend/styles.css" />
     <script defer src="/frontend/app.js"></script>
@@ -15,9 +15,36 @@
     <div class="bg-orb bg-orb-a"></div>
     <div class="bg-orb bg-orb-b"></div>
 
+    <section id="login-screen" class="login-screen shell">
+      <div class="login-card">
+        <div class="login-copy">
+          <p class="eyebrow">CityOs</p>
+          <h1>Sign in to the control center</h1>
+          <p class="lede">
+            Access the live OCPP dashboard, remote actions, and session activity from a single secure entry point.
+          </p>
+        </div>
+
+        <form id="login-form" class="login-form">
+          <label>
+            Email
+            <input id="login-email" name="email" type="email" autocomplete="email" value="mvp@prelabel.tn" required />
+          </label>
+          <label>
+            Password
+            <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required />
+          </label>
+          <p id="login-error" class="login-error" aria-live="polite"></p>
+          <button class="btn btn-primary login-submit" type="submit">Sign in</button>
+          <p class="note login-note">Use the provided CPMS credentials to continue.</p>
+        </form>
+      </div>
+    </section>
+
+    <div id="app-shell" class="app-shell" hidden>
     <header class="shell header">
       <div>
-        <p class="eyebrow">CPMS Simple</p>
+        <p class="eyebrow">CityOs</p>
         <h1>Charge Point Control Center</h1>
         <p class="lede">
           Monitor OCPP chargers, inspect sessions, and trigger remote actions from one lightweight backend dashboard.
@@ -25,6 +52,7 @@
       </div>
       <div class="header-actions">
         <button id="refresh-btn" class="btn btn-secondary" type="button">Refresh</button>
+        <button id="logout-btn" class="btn btn-secondary" type="button">Logout</button>
         <a class="btn btn-primary" href="/health" target="_blank" rel="noreferrer">Backend Health</a>
       </div>
     </header>
@@ -127,7 +155,8 @@
 
               <form id="remote-stop-form" class="command-card">
                 <h4>Remote Stop</h4>
-                <label>Transaction ID <input name="transaction_id" type="number" min="1" placeholder="1" /></label>
+                <p class="note">Uses the open transaction automatically when you leave the field empty.</p>
+                <label>Transaction ID (optional) <input name="transaction_id" type="number" min="1" placeholder="Auto" /></label>
                 <button class="btn btn-primary" type="submit">Send</button>
               </form>
 
@@ -191,5 +220,6 @@
     </template>
 
     <div id="toast" class="toast" aria-live="polite"></div>
+    </div>
   </body>
 </html>

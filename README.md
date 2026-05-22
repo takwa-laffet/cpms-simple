@@ -1,4 +1,4 @@
-# CPMS Simple
+# CityOs
 
 Minimal CPMS backend that exposes charger state as JSON through a FastAPI API.
 

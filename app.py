@@ -1,4 +1,7 @@
 import asyncio
+import base64
+import hashlib
+import hmac
 import json
 import logging
 import os
@@ -6,10 +9,11 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 import uvicorn
 
 try:
@@ -54,10 +58,75 @@ BORNE_LOGS_DIR.mkdir(exist_ok=True)
 META_FILE = DATA_DIR / "borne_meta.json"
 FRONTEND_DIR = Path("frontend")
 FRONTEND_INDEX_FILE = FRONTEND_DIR / "index.html"
+AUTH_COOKIE_NAME = "cpms_auth"
+AUTH_EMAIL = os.environ.get("CPMS_LOGIN_EMAIL", "mvp@prelabel.tn")
+AUTH_PASSWORD = os.environ.get("CPMS_LOGIN_PASSWORD", "Cpms_Secure#48Tz@2026")
+AUTH_SECRET_KEY = os.environ.get("AUTH_SECRET_KEY", "cpms-simple-dev-secret")
+AUTH_SESSION_TTL_SECONDS = int(os.environ.get("AUTH_SESSION_TTL_SECONDS", "86400"))
+
+
+class LoginPayload(BaseModel):
+    email: str
+    password: str
 
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def current_unix_timestamp() -> int:
+    return int(datetime.now(timezone.utc).timestamp())
+
+
+def _auth_signature(payload: str) -> str:
+    digest = hmac.new(AUTH_SECRET_KEY.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).digest()
+    return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+
+def build_auth_cookie_value(email: str) -> str:
+    issued_at = str(current_unix_timestamp())
+    payload = f"{email}:{issued_at}"
+    return f"{payload}:{_auth_signature(payload)}"
+
+
+def verify_auth_cookie_value(cookie_value: str | None) -> str | None:
+    if not cookie_value:
+        return None
+
+    try:
+        email, issued_at_text, signature = cookie_value.rsplit(":", 2)
+    except ValueError:
+        return None
+
+    payload = f"{email}:{issued_at_text}"
+    expected_signature = _auth_signature(payload)
+    if not hmac.compare_digest(signature, expected_signature):
+        return None
+
+    try:
+        issued_at = int(issued_at_text)
+    except ValueError:
+        return None
+
+    if current_unix_timestamp() - issued_at > AUTH_SESSION_TTL_SECONDS:
+        return None
+
+    if not hmac.compare_digest(email, AUTH_EMAIL):
+        return None
+
+    return email
+
+
+def get_authenticated_email(request: Request) -> str | None:
+    return verify_auth_cookie_value(request.cookies.get(AUTH_COOKIE_NAME))
+
+
+def require_authenticated_email(request: Request) -> str:
+    email = get_authenticated_email(request)
+    if email is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    return email
 
 
 def parse_iso_datetime(value: str | None):
@@ -743,6 +812,10 @@ class DataCollector:
             self._write_state()
             return tx_id
 
+    async def get_open_transaction(self, cp_id: str) -> dict | None:
+        async with self._lock:
+            return self.open_transactions_by_cp.get(cp_id)
+
     async def stop_transaction(self, cp_id: str, stop_payload: dict) -> None:
         event = {
             "event_type": "transaction_closed",
@@ -768,8 +841,52 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def protect_dashboard_api(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/api/cp") and not path.startswith("/api/auth"):
+        if get_authenticated_email(request) is None:
+            return JSONResponse({"detail": "Not authenticated"}, status_code=status.HTTP_401_UNAUTHORIZED)
+
+    return await call_next(request)
+
 if FRONTEND_DIR.exists():
     app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
+
+
+@app.post("/api/auth/login")
+async def login(payload: LoginPayload):
+    email = payload.email.strip()
+    password = payload.password
+
+    if not hmac.compare_digest(email, AUTH_EMAIL) or not hmac.compare_digest(password, AUTH_PASSWORD):
+        return JSONResponse({"detail": "Invalid email or password"}, status_code=status.HTTP_401_UNAUTHORIZED)
+
+    response = JSONResponse({"status": "ok", "email": email})
+    response.set_cookie(
+        AUTH_COOKIE_NAME,
+        build_auth_cookie_value(email),
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=AUTH_SESSION_TTL_SECONDS,
+        path="/",
+    )
+    return response
+
+
+@app.post("/api/auth/logout")
+def logout():
+    response = JSONResponse({"status": "ok"})
+    response.delete_cookie(AUTH_COOKIE_NAME, path="/")
+    return response
+
+
+@app.get("/api/auth/me")
+def auth_me(request: Request):
+    email = require_authenticated_email(request)
+    return JSONResponse({"authenticated": True, "email": email})
 
 
 @app.get("/health")
@@ -777,7 +894,7 @@ def health():
     return JSONResponse(
         {
             "status": "ok",
-            "service": "cpms-simple backend",
+            "service": "CityOs backend",
             "api": "/api/cp",
         }
     )
@@ -791,7 +908,7 @@ def root():
     return JSONResponse(
         {
             "status": "ok",
-            "service": "cpms-simple backend",
+            "service": "CityOs backend",
             "api": "/api/cp",
         }
     )
@@ -940,7 +1057,7 @@ async def remote_start(cp_id: str, connector_id: int | None = None, id_tag: str 
 
 
 @app.post("/api/cp/{cp_id}/remote_stop")
-async def remote_stop(cp_id: str, transaction_id: int):
+async def remote_stop(cp_id: str, transaction_id: int | None = None):
     """Send a real OCPP RemoteStopTransaction to the connected charger."""
     if not OCPP_AVAILABLE or call is None:
         return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
@@ -949,11 +1066,26 @@ async def remote_stop(cp_id: str, transaction_id: int):
     if cp_instance is None:
         return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
 
-    request = call.RemoteStopTransaction(transaction_id=transaction_id)
+    effective_transaction_id = transaction_id
+    if effective_transaction_id is None:
+        open_transaction = await COLLECTOR.get_open_transaction(cp_id)
+        if open_transaction is not None:
+            effective_transaction_id = normalize_transaction_id(open_transaction.get("transaction_id"))
+
+    if effective_transaction_id is None:
+        return JSONResponse(
+            {
+                "result": "error",
+                "detail": "Transaction ID is required when no transaction is currently open",
+            },
+            status_code=400,
+        )
+
+    request = call.RemoteStopTransaction(transaction_id=effective_transaction_id)
     try:
         response = await cp_instance.call(request)
-        await COLLECTOR.record_action(cp_id, "RemoteStopTransaction", {"transaction_id": transaction_id, "response_status": getattr(response, "status", None)})
-        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "transaction_id": transaction_id})
+        await COLLECTOR.record_action(cp_id, "RemoteStopTransaction", {"transaction_id": effective_transaction_id, "response_status": getattr(response, "status", None)})
+        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "transaction_id": effective_transaction_id})
     except Exception as error:
         LOGGER.exception("RemoteStopTransaction failed for %s: %s", cp_id, error)
         return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)

@@ -14,6 +14,18 @@ from app import (
 )
 
 
+AUTH_EMAIL = "mvp@prelabel.tn"
+AUTH_PASSWORD = "Cpms_Secure#48Tz@2026"
+
+
+def login_test_client(client: TestClient) -> None:
+    response = client.post(
+        "/api/auth/login",
+        json={"email": AUTH_EMAIL, "password": AUTH_PASSWORD},
+    )
+    assert response.status_code == 200, response.text
+
+
 class AppSmokeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(app)
@@ -22,7 +34,9 @@ class AppSmokeTests(unittest.TestCase):
         response = self.client.get("/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("CPMS Simple Dashboard", response.text)
+        self.assertIn("CityOs Dashboard", response.text)
+        self.assertIn('id="login-form"', response.text)
+        self.assertIn('id="login-password"', response.text)
 
     def test_health_endpoint(self) -> None:
         response = self.client.get("/health")
@@ -31,6 +45,20 @@ class AppSmokeTests(unittest.TestCase):
         self.assertEqual(response.json()["status"], "ok")
         self.assertEqual(response.json()["api"], "/api/cp")
 
+    def test_login_endpoint_sets_session_cookie(self) -> None:
+        response = self.client.post(
+            "/api/auth/login",
+            json={"email": AUTH_EMAIL, "password": AUTH_PASSWORD},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "ok")
+        self.assertIn("cpms_auth=", response.headers.get("set-cookie", ""))
+
+        session_response = self.client.get("/api/auth/me")
+        self.assertEqual(session_response.status_code, 200)
+        self.assertTrue(session_response.json()["authenticated"])
+
     def test_frontend_script_is_served(self) -> None:
         response = self.client.get("/frontend/app.js")
 
@@ -38,6 +66,7 @@ class AppSmokeTests(unittest.TestCase):
         self.assertIn("const state", response.text)
 
     def test_api_cp_returns_snapshot(self) -> None:
+        login_test_client(self.client)
         response = self.client.get("/api/cp")
 
         self.assertEqual(response.status_code, 200)
@@ -45,6 +74,12 @@ class AppSmokeTests(unittest.TestCase):
         self.assertIn("snapshot", payload)
         self.assertIn("events", payload)
         self.assertIn("energy", payload)
+
+    def test_api_cp_requires_login(self) -> None:
+        response = self.client.get("/api/cp")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["detail"], "Not authenticated")
 
     def test_normalize_boot_payload_aliases(self) -> None:
         payload = normalize_boot_payload(
@@ -111,6 +146,10 @@ class RemoteCommandTests(unittest.TestCase):
         self.get_cp_patch.start()
         self.record_action_patch.start()
 
+        login_test_client(self.client)
+
+        self.addCleanup(app_module.COLLECTOR.open_transactions_by_cp.pop, "CP001", None)
+
         self.addCleanup(self.call_patch.stop)
         self.addCleanup(self.get_cp_patch.stop)
         self.addCleanup(self.record_action_patch.stop)
@@ -143,6 +182,19 @@ class RemoteCommandTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(self.fake_cp.requests), 1)
         self.assertEqual(self.fake_cp.requests[0].transaction_id, 99)
+
+    def test_remote_stop_uses_open_transaction_when_missing(self) -> None:
+        app_module.COLLECTOR.open_transactions_by_cp["CP001"] = {
+            "transaction_id": 42,
+            "opened_at": "2026-05-22T10:00:00+00:00",
+        }
+
+        response = self.client.post("/api/cp/CP001/remote_stop")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(self.fake_cp.requests), 1)
+        self.assertEqual(self.fake_cp.requests[0].transaction_id, 42)
+        self.assertEqual(response.json()["transaction_id"], 42)
 
     def test_remote_reboot_uses_requested_reset_type(self) -> None:
         response = self.client.post("/api/cp/CP001/remote_reboot?reset_type=Hard")
