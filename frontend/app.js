@@ -826,18 +826,17 @@ function wireCommand(formId, buildUrl, bodyBuilder = null) {
 
 function wireCommands() {
   wireCommand('force-start-form', (cpId, formData) => {
-    const params = new URLSearchParams({
-      connector_id: formData.get('connector_id') || '1',
-      meter_start: formData.get('meter_start') || '0',
-    });
+    const params = new URLSearchParams();
+    params.set('connector_id', formData.get('connector_id') || '1');
+    params.set('meter_start', formData.get('meter_start') || '0');
     return `/api/cp/${cpId}/force_start?${params.toString()}`;
   });
 
   wireCommand('force-stop-form', (cpId, formData) => {
-    const params = new URLSearchParams({
-      transaction_id: formData.get('transaction_id') || '',
-      meter_stop: formData.get('meter_stop') || '0',
-    });
+    const params = new URLSearchParams();
+    const transactionId = formData.get('transaction_id');
+    if (transactionId) params.set('transaction_id', transactionId);
+    params.set('meter_stop', formData.get('meter_stop') || '0');
     return `/api/cp/${cpId}/force_stop?${params.toString()}`;
   });
 

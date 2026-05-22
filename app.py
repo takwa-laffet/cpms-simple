@@ -1387,35 +1387,46 @@ def billing_summary(request: Request):
 
 
 @app.post("/api/cp/{cp_id}/force_start")
-async def force_start(cp_id: str, connector_id: int = 1, meter_start: int = 0):
+async def force_start(cp_id: str, connector_id: str = "1", meter_start: str = "0"):
     """Prefer a real remote start, then fall back to server-side tracking."""
+    parsed_connector = int(connector_id) if connector_id else 1
+    parsed_meter = int(meter_start) if meter_start else 0
     if OCPP_AVAILABLE and call is not None:
         cp_instance = await COLLECTOR.get_charge_point(cp_id)
         if cp_instance is not None:
-            remote_response = await remote_start(cp_id, connector_id=connector_id)
+            remote_response = await remote_start(cp_id, connector_id=str(parsed_connector))
             if getattr(remote_response, "status_code", 200) == 200:
                 return remote_response
 
-    tx_id = await COLLECTOR.start_transaction(cp_id, {"connector_id": connector_id, "meter_start": meter_start})
-    await COLLECTOR.record_action(cp_id, "ForceStart", {"transaction_id": tx_id, "connector_id": connector_id, "meter_start": meter_start})
+    tx_id = await COLLECTOR.start_transaction(cp_id, {"connector_id": parsed_connector, "meter_start": parsed_meter})
+    await COLLECTOR.record_action(cp_id, "ForceStart", {"transaction_id": tx_id, "connector_id": parsed_connector, "meter_start": parsed_meter})
     return JSONResponse({"result": "started", "transaction_id": tx_id})
 
 
 @app.post("/api/cp/{cp_id}/force_stop")
-async def force_stop(cp_id: str, transaction_id: int | None = None, meter_stop: int = 0):
+async def force_stop(cp_id: str, transaction_id: str = "", meter_stop: str = "0"):
     """Force-stop a transaction server-side without requiring CP StopTransaction."""
-    payload = {"meter_stop": meter_stop, "transaction_id": transaction_id}
+    # Parse transaction_id: accept string or int, convert empty to None
+    parsed_tx_id = None
+    if transaction_id:
+        try:
+            parsed_tx_id = int(transaction_id)
+        except (ValueError, TypeError):
+            pass
+    parsed_meter = int(meter_stop) if meter_stop else 0
+    payload = {"meter_stop": parsed_meter, "transaction_id": parsed_tx_id}
     await COLLECTOR.record_action(cp_id, "ForceStop", payload)
     await COLLECTOR.stop_transaction(cp_id, payload)
-    return JSONResponse({"result": "stopped", "transaction_id": transaction_id})
+    return JSONResponse({"result": "stopped", "transaction_id": parsed_tx_id})
 
 
 @app.post("/api/cp/{cp_id}/remote_start")
-async def remote_start(cp_id: str, connector_id: int | None = None, id_tag: str | None = None):
+async def remote_start(cp_id: str, connector_id: str = "", id_tag: str = ""):
     """Send a real OCPP RemoteStartTransaction to the connected charger.
 
     The API caller does not need to provide an id_tag; a server-side default is used.
     """
+    parsed_connector = int(connector_id) if connector_id else None
     if not OCPP_AVAILABLE or call is None:
         return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
 
@@ -1427,8 +1438,8 @@ async def remote_start(cp_id: str, connector_id: int | None = None, id_tag: str 
 
     def build_request(include_connector: bool):
         request_kwargs = {"id_tag": effective_id_tag}
-        if include_connector and connector_id is not None:
-            request_kwargs["connector_id"] = connector_id
+        if include_connector and parsed_connector is not None:
+            request_kwargs["connector_id"] = parsed_connector
         return call.RemoteStartTransaction(**request_kwargs)
 
     try:
@@ -1437,7 +1448,7 @@ async def remote_start(cp_id: str, connector_id: int | None = None, id_tag: str 
         response_status = getattr(response, "status", None)
 
         # Some chargers ignore or reject connector_id; retry once without it.
-        if str(response_status).lower() not in ("accepted", "accept", "ok") and connector_id is not None:
+        if str(response_status).lower() not in ("accepted", "accept", "ok") and parsed_connector is not None:
             fallback_request = build_request(include_connector=False)
             fallback_response = await cp_instance.call(fallback_request)
             fallback_status = getattr(fallback_response, "status", None)
@@ -1445,7 +1456,7 @@ async def remote_start(cp_id: str, connector_id: int | None = None, id_tag: str 
                 cp_id,
                 "RemoteStartTransaction",
                 {
-                    "connector_id": connector_id,
+                    "connector_id": parsed_connector,
                     "id_tag": effective_id_tag,
                     "response_status": response_status,
                     "fallback_used": True,
@@ -1455,7 +1466,7 @@ async def remote_start(cp_id: str, connector_id: int | None = None, id_tag: str 
             return JSONResponse({
                 "result": "sent",
                 "response_status": fallback_status,
-                "connector_id": connector_id,
+                "connector_id": parsed_connector,
                 "connector_id_used": None,
                 "id_tag_used": effective_id_tag,
                 "fallback_used": True,
@@ -1466,7 +1477,7 @@ async def remote_start(cp_id: str, connector_id: int | None = None, id_tag: str 
             cp_id,
             "RemoteStartTransaction",
             {
-                "connector_id": connector_id,
+                "connector_id": parsed_connector,
                 "id_tag": effective_id_tag,
                 "response_status": response_status,
                 "fallback_used": False,
@@ -1475,8 +1486,8 @@ async def remote_start(cp_id: str, connector_id: int | None = None, id_tag: str 
         return JSONResponse({
             "result": "sent",
             "response_status": response_status,
-            "connector_id": connector_id,
-            "connector_id_used": connector_id,
+            "connector_id": parsed_connector,
+            "connector_id_used": parsed_connector,
             "id_tag_used": effective_id_tag,
             "fallback_used": False,
         })
@@ -1486,7 +1497,7 @@ async def remote_start(cp_id: str, connector_id: int | None = None, id_tag: str 
 
 
 @app.post("/api/cp/{cp_id}/remote_stop")
-async def remote_stop(cp_id: str, transaction_id: int | None = None):
+async def remote_stop(cp_id: str, transaction_id: str = ""):
     """Send a real OCPP RemoteStopTransaction to the connected charger."""
     if not OCPP_AVAILABLE or call is None:
         return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
@@ -1495,7 +1506,8 @@ async def remote_stop(cp_id: str, transaction_id: int | None = None):
     if cp_instance is None:
         return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
 
-    effective_transaction_id = transaction_id
+    parsed_tx_id = int(transaction_id) if transaction_id else None
+    effective_transaction_id = parsed_tx_id
     if effective_transaction_id is None:
         open_transaction = await COLLECTOR.get_open_transaction(cp_id)
         if open_transaction is not None:
@@ -1544,7 +1556,7 @@ async def remote_reboot(cp_id: str, reset_type: str = "Soft"):
 
 
 @app.post("/api/cp/{cp_id}/unlock_connector")
-async def unlock_connector(cp_id: str, connector_id: int = 1):
+async def unlock_connector(cp_id: str, connector_id: str = "1"):
     """Send a real OCPP UnlockConnector command to the connected charger."""
     if not OCPP_AVAILABLE or call is None:
         return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
@@ -1553,11 +1565,12 @@ async def unlock_connector(cp_id: str, connector_id: int = 1):
     if cp_instance is None:
         return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
 
-    request = call.UnlockConnector(connector_id=connector_id)
+    parsed_connector = int(connector_id) if connector_id else 1
+    request = call.UnlockConnector(connector_id=parsed_connector)
     try:
         response = await cp_instance.call(request)
-        await COLLECTOR.record_action(cp_id, "UnlockConnector", {"connector_id": connector_id, "response_status": getattr(response, "status", None)})
-        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "connector_id": connector_id})
+        await COLLECTOR.record_action(cp_id, "UnlockConnector", {"connector_id": parsed_connector, "response_status": getattr(response, "status", None)})
+        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "connector_id": parsed_connector})
     except Exception as error:
         LOGGER.exception("UnlockConnector failed for %s: %s", cp_id, error)
         return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)
