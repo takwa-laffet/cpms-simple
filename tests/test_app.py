@@ -59,6 +59,18 @@ class AppSmokeTests(unittest.TestCase):
         self.assertEqual(session_response.status_code, 200)
         self.assertTrue(session_response.json()["authenticated"])
 
+    def test_login_form_post_redirects_when_not_json(self) -> None:
+        response = self.client.post(
+            "/api/auth/login",
+            data={"email": AUTH_EMAIL, "password": AUTH_PASSWORD},
+            headers={"Accept": "text/html"},
+            follow_redirects=False,
+        )
+
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(response.headers.get("location"), "/")
+        self.assertIn("cpms_auth=", response.headers.get("set-cookie", ""))
+
     def test_frontend_script_is_served(self) -> None:
         response = self.client.get("/frontend/app.js")
 

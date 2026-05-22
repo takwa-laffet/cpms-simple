@@ -8,10 +8,11 @@ import os
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import parse_qs
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
@@ -856,14 +857,36 @@ if FRONTEND_DIR.exists():
 
 
 @app.post("/api/auth/login")
-async def login(payload: LoginPayload):
+async def login(request: Request):
+    content_type = request.headers.get("content-type", "")
+    accept_header = request.headers.get("accept", "")
+    wants_json = "application/json" in content_type or "application/json" in accept_header
+
+    if "application/json" in content_type:
+        data = await request.json()
+        payload = LoginPayload(**data)
+    else:
+        raw_body = (await request.body()).decode("utf-8")
+        form_data = parse_qs(raw_body, keep_blank_values=True)
+        payload = LoginPayload(
+            email=str((form_data.get("email") or [""])[0]),
+            password=str((form_data.get("password") or [""])[0]),
+        )
+
     email = payload.email.strip()
     password = payload.password
 
     if not hmac.compare_digest(email, AUTH_EMAIL) or not hmac.compare_digest(password, AUTH_PASSWORD):
-        return JSONResponse({"detail": "Invalid email or password"}, status_code=status.HTTP_401_UNAUTHORIZED)
+        if wants_json:
+            return JSONResponse({"detail": "Invalid email or password"}, status_code=status.HTTP_401_UNAUTHORIZED)
 
-    response = JSONResponse({"status": "ok", "email": email})
+        return RedirectResponse(url="/?login=failed", status_code=status.HTTP_303_SEE_OTHER)
+
+    if wants_json:
+        response = JSONResponse({"status": "ok", "email": email})
+    else:
+        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
     response.set_cookie(
         AUTH_COOKIE_NAME,
         build_auth_cookie_value(email),
