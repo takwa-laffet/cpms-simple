@@ -1298,8 +1298,6 @@ async def list_active_simulations():
 
 
 # Global simulation state (in production, use Redis or database)
-simulation_state = {}
-
 
 @app.get("/api/auth/me")
 def auth_me(request: Request):
