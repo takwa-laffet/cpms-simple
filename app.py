@@ -1171,7 +1171,7 @@ def logout():
 
 @app.post("/api/ocpp/simulate")
 async def start_ocpp_simulation(request: Request):
-    """Start OCPP simulation without authentication"""
+    """Start OCPP simulation without authentication - uses real-time auto simulator"""
     try:
         data = await request.json()
         cp_id = data.get("cp_id")
@@ -1179,14 +1179,18 @@ async def start_ocpp_simulation(request: Request):
         
         if not cp_id:
             raise HTTPException(status_code=400, detail="cp_id is required")
-            
-        # Store simulation state (in production, use proper state management)
-        simulation_state[cp_id] = {
-            "ws_url": ws_url,
-            "active": True,
-            "start_time": utc_now_iso(),
-            "messages": []
-        }
+        
+        # Import and start the auto simulator
+        from auto_simulator import start_auto_simulator, simulation_state as auto_sim_state
+        
+        result = await start_auto_simulator(cp_id, ws_url)
+        
+        if not result and cp_id in auto_sim_state:
+            return JSONResponse({
+                "result": "simulation_already_running",
+                "cp_id": cp_id,
+                "message": "Simulation already running for this CP"
+            })
         
         # Log the simulation start
         await COLLECTOR.record_action("SYSTEM", "SimulationStart", {
@@ -1198,7 +1202,7 @@ async def start_ocpp_simulation(request: Request):
             "result": "simulation_started",
             "cp_id": cp_id,
             "ws_url": ws_url,
-            "message": "OCPP simulation started. Check logs for message exchange."
+            "message": "OCPP simulation started. Logs are being written to cpms_data/borne_logs/"
         })
     except Exception as e:
         LOGGER.error(f"Error starting OCPP simulation: {e}")
@@ -1208,30 +1212,30 @@ async def start_ocpp_simulation(request: Request):
 @app.post("/api/ocpp/simulate/{cp_id}/stop")
 async def stop_ocpp_simulation(cp_id: str):
     """Stop OCPP simulation for a specific charge point"""
-    if cp_id in simulation_state:
-        simulation_state[cp_id]["active"] = False
-        await COLLECTOR.record_action("SYSTEM", "SimulationStop", {
-            "cp_id": cp_id,
-            "stop_time": utc_now_iso()
-        })
-        return JSONResponse({"result": "simulation_stopped", "cp_id": cp_id})
-    else:
-        raise HTTPException(status_code=404, detail=f"No active simulation for CP ID: {cp_id}")
+    from auto_simulator import stop_auto_simulator
+    
+    await stop_auto_simulator(cp_id)
+    await COLLECTOR.record_action("SYSTEM", "SimulationStop", {
+        "cp_id": cp_id,
+        "stop_time": utc_now_iso()
+    })
+    return JSONResponse({"result": "simulation_stopped", "cp_id": cp_id})
 
 
 @app.get("/api/ocpp/simulate/{cp_id}/messages")
 async def get_simulation_messages(cp_id: str):
     """Get OCPP simulation messages for a charge point"""
-    if cp_id in simulation_state:
+    from auto_simulator import simulation_state as sim_state
+    if cp_id in sim_state:
         return JSONResponse({
             "cp_id": cp_id,
-            "messages": simulation_state[cp_id]["messages"],
-            "active": simulation_state[cp_id]["active"],
-            "start_time": simulation_state[cp_id]["start_time"]
+            "messages": [],
+            "active": sim_state[cp_id].get("running", False),
+            "start_time": sim_state[cp_id].get("start_time", ""),
+            "ws_url": sim_state[cp_id].get("ws_url", "")
         })
     else:
         raise HTTPException(status_code=404, detail=f"No simulation found for CP ID: {cp_id}")
-
 
 @app.post("/api/ocpp/simulate/message")
 async def send_ocpp_simulation_message(request: Request):
@@ -1246,7 +1250,7 @@ async def send_ocpp_simulation_message(request: Request):
         if not cp_id or not message_type:
             raise HTTPException(status_code=400, detail="cp_id and type are required")
             
-        if cp_id not in simulation_state:
+
             raise HTTPException(status_code=404, detail=f"No active simulation for CP ID: {cp_id}")
             
         # Create message record
@@ -1258,7 +1262,7 @@ async def send_ocpp_simulation_message(request: Request):
         }
         
         # Add to simulation state
-        simulation_state[cp_id]["messages"].append(message_record)
+        sim_state[cp_id].get("messages", []).append(message_record)
         
         # Log to collector
         await COLLECTOR.record_action(cp_id, f"Simulation_{message_type}", {
