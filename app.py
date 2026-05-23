@@ -1420,6 +1420,13 @@ async def ocpp_simulator_frontend():
         raise HTTPException(status_code=404, detail="Simulator frontend not found")
 
 
+
+@app.get("/api/cp")
+async def cp_data(request: Request):
+    """Get CPMS data for dashboard"""
+    payload = build_cp_payload()
+    return JSONResponse(payload)
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     uvicorn.run("app:app", host="0.0.0.0", port=port, log_level="info")
