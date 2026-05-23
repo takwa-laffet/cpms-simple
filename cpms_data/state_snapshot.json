@@ -1,0 +1,25 @@
+{
+  "generated_at": "2026-05-23T11:41:46.936675+00:00",
+  "server_started_at": "2026-05-23T11:38:50.508680+00:00",
+  "metrics": {
+    "total_connections": 0,
+    "active_connections": 0,
+    "total_messages": 3
+  },
+  "message_count_by_action": {
+    "SimulationStart": 2,
+    "Simulation_Heartbeat": 1
+  },
+  "message_count_by_cp": {
+    "SYSTEM": 2,
+    "CP_TEST_001": 1
+  },
+  "last_seen": {
+    "SYSTEM": "2026-05-23T11:40:55.758309+00:00",
+    "CP_TEST_001": "2026-05-23T11:41:46.935794+00:00"
+  },
+  "status_by_cp": {},
+  "last_meter_values_by_cp": {},
+  "boot_notifications_by_cp": {},
+  "open_transactions_by_cp": {}
+}

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCPP Simulator - CPMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">OCPP 1.6 Simulator</h1>
+            <p class="text-gray-600">Simulate Charge Point communications with CPMS</p>
+        </header>
+
+        <main class="grid md:grid-cols-2 gap-6">
+            <!-- Control Panel -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4">Connection Settings</h2>
+                
+                <div id="connection-form">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">Charge Point ID:</label>
+                        <input type="text" id="cpId" class="w-full px-3 py-2 border rounded" placeholder="e.g., CP_SIM_001" value="CP_SIM_001">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">WebSocket URL:</label>
+                        <input type="text" id="wsUrl" class="w-full px-3 py-2 border rounded" placeholder="ws://localhost:5000" value="ws://localhost:5000">
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button id="connectBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded">
+                            Start Simulation
+                        </button>
+                        <button id="disconnectBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-medium px-4 py-2 rounded" disabled>
+                            Stop Simulation
+                        </button>
+                        <button id="resetBtn" class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                <div id="status-panel" class="mt-6 p-4 bg-blue-50 rounded hidden">
+                    <h3 class="font-semibold mb-2">Simulation Status:</h3>
+                    <p id="statusText" class="text-lg font-mono">Stopped</p>
+                    <p id="detailsText" class="text-sm text-gray-500 mt-1"></p>
+                </div>
+            </div>
+
+            <!-- Message Log -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4">OCPP Message Log</h2>
+                <div id="messageLog" class="h-96 overflow-y-auto border rounded p-4 bg-gray-50">
+                    <div class="text-center py-8 text-gray-400">
+                        No messages yet. Start simulation to see OCPP message exchange.
+                    </div>
+                </div>
+                <div class="flex justify-end mt-3">
+                    <button id="clearLogBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium px-3 py-1 rounded text-sm">
+                        Clear Log
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Custom Message Sender -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Send Custom OCPP Message</h2>
+            <div id="customMessageForm" class="space-y-4">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Message Type:</label>
+                        <select id="messageType" class="w-full px-3 py-2 border rounded">
+                            <option value="Heartbeat">Heartbeat</option>
+                            <option value="BootNotification">BootNotification</option>
+                            <option value="StatusNotification">StatusNotification</option>
+                            <option value="MeterValues">MeterValues</option>
+                            <option value="Authorize">Authorize</option>
+                            <option value="DataTransfer">DataTransfer</option>
+                            <option value="DiagnosticsStatusNotification">DiagnosticsStatusNotification</option>
+                            <option value="FirmwareStatusNotification">FirmwareStatusNotification</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Direction:</label>
+                        <select id="messageDirection" class="w-full px-3 py-2 border rounded">
+                            <option value="sent">Sent (to CPMS)</option>
+                            <option value="received">Received (from CPMS)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="payloadContainer">
+                    <label class="block text-gray-700 mb-2">Payload (JSON):</label>
+                    <textarea id="messagePayload" rows="4" class="w-full px-3 py-2 border rounded font-mono" placeholder='{"example": "value"}'></textarea>
+                </div>
+                
+                <div class="flex items-end">
+                    <button id="sendCustomMsgBtn" class="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded">
+                        Send Message
+                    </button>
+                    <span id="customMsgStatus" class="ml-3 text-sm text-gray-500"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusPanel = document.getElementById('statusPanel');
+        const statusText = document.getElementById('statusText');
+        const detailsText = document.getElementById('detailsText');
+        const messageLog = document.getElementById('messageLog');
+        const clearLogBtn = document.getElementById('clearLogBtn');
+        const customMessageForm = document.getElementById('customMessageForm');
+        const sendCustomMsgBtn = document.getElementById('sendCustomMsgBtn');
+        const customMsgStatus = document.getElementById('customMsgStatus');
+        const messageTypeSelect = document.getElementById('messageType');
+        const messageDirectionSelect = document.getElementById('messageDirection');
+        const messagePayload = document.getElementById('messagePayload');
+        const payloadContainer = document.getElementById('payloadContainer');
+
+        // State
+        let isSimulating = false;
+        let currentCpId = null;
+        let pollingInterval = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateMessageTypeFields();
+            fetchStatus();
+            startStatusPolling();
+        });
+
+        // Event Listeners
+        connectBtn.addEventListener('click', startSimulation);
+        disconnectBtn.addEventListener('click', stopSimulation);
+        resetBtn.addEventListener('click', resetSimulator);
+        clearLogBtn.addEventListener('click', clearMessageLog);
+        sendCustomMsgBtn.addEventListener('click', sendCustomMessage);
+        messageTypeSelect.addEventListener('change', updateMessageTypeFields);
+
+        // Functions
+        function startSimulation() {
+            const cpId = document.getElementById('cpId').value.trim();
+            const wsUrl = document.getElementById('wsUrl').value.trim();
+
+            if (!cpId) {
+                alert('Please enter a Charge Point ID');
+                return;
+            }
+
+            fetch('/api/ocpp/simulate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({cp_id: cpId, ws_url: wsUrl})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.detail) {
+                    alert('Simulation failed: ' + data.detail);
+                } else {
+                    isSimulating = true;
+                    currentCpId = cpId;
+                    updateSimulationUI(true);
+                    addSystemMessage(`Simulation started for CP ID: ${cpId}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to start simulation: ' + error.message);
+            });
+        }
+
+        function stopSimulation() {
+            if (!currentCpId) {
+                alert('No active simulation to stop');
+                return;
+            }
+
+            fetch(`/api/ocpp/simulate/${currentCpId}/stop`, {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                if (data.detail) {
+                    alert('Failed to stop simulation: ' + data.detail);
+                } else {
+                    isSimulating = false;
+                    updateSimulationUI(false);
+                    addSystemMessage('Simulation stopped');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to stop simulation: ' + error.message);
+            });
+        }
+
+        function resetSimulator() {
+            if (!confirm('Reset simulator state? This will clear all messages and stop any ongoing simulation.')) {
+                return;
+            }
+
+            fetch('/api/ocpp/simulate', {method: 'POST'}) // This will reset via clearing state in a real implementation
+            .then(response => response.json())
+            .then(data => {
+                // For now, just clear local state and messages
+                isSimulating = false;
+                currentCpId = null;
+                updateSimulationUI(false);
+                clearMessageLog();
+                addSystemMessage('Simulator reset');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Reset failed: ' + error.message);
+            });
+        }
+
+        function updateSimulationUI(simulating) {
+            isSimulating = simulating;
+            connectBtn.disabled = simulating;
+            disconnectBtn.disabled = !simulating;
+            
+            if (simulating) {
+                statusPanel.classList.remove('hidden');
+                statusText.textContent = 'Simulating';
+                statusText.className = 'text-lg font-mono text-green-600';
+                detailsText.textContent = `CP ID: ${currentCpId}`;
+            } else {
+                statusPanel.classList.add('hidden');
+                statusText.textContent = 'Stopped';
+                statusText.className = 'text-lg font-mono text-red-600';
+                detailsText.textContent = '';
+            }
+        }
+
+        function updateMessageTypeFields() {
+            const type = messageTypeSelect.value;
+            let placeholder = '';
+            
+            switch (type) {
+                case 'BootNotification':
+                    placeholder = '{"charge_point_model": "Model", "charge_point_vendor": "Vendor", "firmware_version": "1.0"}';
+                    break;
+                case 'StatusNotification':
+                    placeholder = '{"connector_id": 1, "error_code": "NoError", "status": "Available", "timestamp": "' + new Date().toISOString() + '"}';
+                    break;
+                case 'MeterValues':
+                    placeholder = '[{"timestamp": "' + new Date().toISOString() + '", "sampled_value": [{"value": "1000", "unit": "Wh"}]}]';
+                    break;
+                case 'Authorize':
+                    placeholder = '{"id_tag": "TAG123"}';
+                    break;
+                case 'DataTransfer':
+                    placeholder = '{"vendor_id": "ACME Charging", "data": "custom data"}';
+                    break;
+                default:
+                    placeholder = '{}';
+            }
+            
+            messagePayload.placeholder = placeholder;
+        }
+
+        function sendCustomMessage() {
+            const type = messageTypeSelect.value;
+            const direction = messageDirectionSelect.value;
+            const payloadText = messagePayload.value.trim();
+            
+            if (!type) {
+                alert('Please select a message type');
+                return;
+            }
+
+            let payload = {};
+            if (payloadText) {
+                try {
+                    payload = JSON.parse(payloadText);
+                } catch (e) {
+                    alert('Invalid JSON in payload: ' + e.message);
+                    return;
+                }
+            }
+
+            fetch('/api/ocpp/simulate/message', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    cp_id: currentCpId || 'CP_SIM_001',
+                    type: type,
+                    payload: payload,
+                    direction: direction
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.detail) {
+                    alert('Failed to send message: ' + data.detail);
+                } else {
+                    customMsgStatus.textContent = 'Message sent!';
+                    setTimeout(() => { customMsgStatus.textContent = ''; }, 2000);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to send message: ' + error.message);
+            });
+        }
+
+        function fetchStatus() {
+            fetch('/api/ocpp/simulate')
+            .then(response => response.json())
+            .then(data => {
+                // Update simulation state based on active simulations
+                const hasActiveSims = data.count > 0;
+                if (hasActiveSims && !isSimulating) {
+                    // There's an active simulation but we're not tracking it in UI
+                    // For simplicity, we'll just update if we have a current CP ID
+                    if (currentCpId && data.active_simulations[currentCpId]) {
+                        isSimulating = true;
+                        updateSimulationUI(true);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching simulation status:', error);
+            });
+        }
+
+        function startStatusPolling() {
+            if (pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(fetchStatus, 2000); // Poll every 2 seconds
+            pollingInterval = setInterval(fetchMessages, 1000); // Update messages every second
+        }
+
+        function fetchMessages() {
+            if (!currentCpId) return;
+            
+            fetch(`/api/ocpp/simulate/${currentCpId}/messages`)
+            .then(response => response.json())
+            .then(data => {
+                renderMessageLog(data.messages);
+            })
+            .catch(error => {
+                // Ignore 404 errors (no simulation yet)
+                if (error.status !== 404) {
+                    console.error('Error fetching messages:', error);
+                }
+            });
+        }
+
+        function renderMessageLog(messages) {
+            if (messages.length === 0) {
+                messageLog.innerHTML = '<div class="text-center py-8 text-gray-400">No messages yet. Start simulation to see OCPP message exchange.</div>';
+                return;
+            }
+
+            messageLog.innerHTML = messages
+                .map(msg => {
+                    const time = new Date(msg.timestamp).toLocaleTimeString();
+                    const directionClass = msg.direction === 'sent' ? 'bg-blue-50' : msg.direction === 'received' ? 'bg-green-50' : 'bg-gray-50';
+                    const directionText = msg.direction === 'sent' ? '→' : msg.direction === 'received' ? '←' : '↔';
+                    
+                    return `
+                        <div class="message-item p-3 mb-2 rounded ${directionClass} border-l-4">
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>${time}</span>
+                                <span>${directionText} ${msg.direction}</span>
+                            </div>
+                            <div class="font-mono text-sm">${msg.type}</div>
+                            ${msg.payload && Object.keys(msg.payload).length > 0 ? `
+                                <div class="mt-1 text-xs text-gray-600 break-all">
+                                    ${JSON.stringify(msg.payload, null, 2)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                })
+                .join('');
+
+            // Auto-scroll to bottom
+            messageLog.scrollTop = messageLog.scrollHeight;
+        }
+
+        function addSystemMessage(message) {
+            const msg = {
+                timestamp: new Date().toISOString(),
+                direction: 'system',
+                type: 'System',
+                payload: {message: message}
+            };
+            
+            // Add to beginning of log for immediate feedback
+            const existingLogs = messageLog.innerHTML;
+            const systemMsg = `
+                <div class="message-item p-3 mb-2 rounded bg-yellow-50 border-l-4 border-yellow-400">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>${new Date(msg.timestamp).toLocaleTimeString()}</span>
+                        <span>↔ system</span>
+                    </div>
+                    <div class="font-mono text-sm">${msg.type}</div>
+                    <div class="mt-1 text-xs text-gray-600 break-all">
+                        ${JSON.stringify(msg.payload, null, 2)}
+                    </div>
+                </div>
+            `;
+            messageLog.innerHTML = systemMsg + existingLogs;
+        }
+
+        function clearMessageLog() {
+            messageLog.innerHTML = '<div class="text-center py-8 text-gray-400">No messages yet. Start simulation to see OCPP message exchange.</div>';
+        }
+    </script>
+</body>
+</html>

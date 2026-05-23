@@ -172,7 +172,7 @@ def ensure_seed_users() -> list[dict]:
                 "email": AUTH_EMAIL,
                 "password_hash": hash_password(AUTH_PASSWORD),
                 "role": "admin",
-                "name": "Rback Admin",
+                "name": "CityOs Admin",
                 "active": True,
                 "created_at": utc_now_iso(),
             }
@@ -1167,6 +1167,136 @@ def logout():
     return response
 
 
+# ========== OCPP SIMULATOR ENDPOINTS (No Auth Required) ==========
+
+@app.post("/api/ocpp/simulate")
+async def start_ocpp_simulation(request: Request):
+    """Start OCPP simulation without authentication"""
+    try:
+        data = await request.json()
+        cp_id = data.get("cp_id")
+        ws_url = data.get("ws_url", "ws://localhost:5000")
+        
+        if not cp_id:
+            raise HTTPException(status_code=400, detail="cp_id is required")
+            
+        # Store simulation state (in production, use proper state management)
+        simulation_state[cp_id] = {
+            "ws_url": ws_url,
+            "active": True,
+            "start_time": utc_now_iso(),
+            "messages": []
+        }
+        
+        # Log the simulation start
+        await COLLECTOR.record_action("SYSTEM", "SimulationStart", {
+            "cp_id": cp_id,
+            "ws_url": ws_url
+        })
+        
+        return JSONResponse({
+            "result": "simulation_started",
+            "cp_id": cp_id,
+            "ws_url": ws_url,
+            "message": "OCPP simulation started. Check logs for message exchange."
+        })
+    except Exception as e:
+        LOGGER.error(f"Error starting OCPP simulation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/ocpp/simulate/{cp_id}/stop")
+async def stop_ocpp_simulation(cp_id: str):
+    """Stop OCPP simulation for a specific charge point"""
+    if cp_id in simulation_state:
+        simulation_state[cp_id]["active"] = False
+        await COLLECTOR.record_action("SYSTEM", "SimulationStop", {
+            "cp_id": cp_id,
+            "stop_time": utc_now_iso()
+        })
+        return JSONResponse({"result": "simulation_stopped", "cp_id": cp_id})
+    else:
+        raise HTTPException(status_code=404, detail=f"No active simulation for CP ID: {cp_id}")
+
+
+@app.get("/api/ocpp/simulate/{cp_id}/messages")
+async def get_simulation_messages(cp_id: str):
+    """Get OCPP simulation messages for a charge point"""
+    if cp_id in simulation_state:
+        return JSONResponse({
+            "cp_id": cp_id,
+            "messages": simulation_state[cp_id]["messages"],
+            "active": simulation_state[cp_id]["active"],
+            "start_time": simulation_state[cp_id]["start_time"]
+        })
+    else:
+        raise HTTPException(status_code=404, detail=f"No simulation found for CP ID: {cp_id}")
+
+
+@app.post("/api/ocpp/simulate/message")
+async def send_ocpp_simulation_message(request: Request):
+    """Send a custom OCPP message in simulation"""
+    try:
+        data = await request.json()
+        cp_id = data.get("cp_id")
+        message_type = data.get("type")
+        payload = data.get("payload", {})
+        direction = data.get("direction", "sent")
+        
+        if not cp_id or not message_type:
+            raise HTTPException(status_code=400, detail="cp_id and type are required")
+            
+        if cp_id not in simulation_state:
+            raise HTTPException(status_code=404, detail=f"No active simulation for CP ID: {cp_id}")
+            
+        # Create message record
+        message_record = {
+            "timestamp": utc_now_iso(),
+            "type": message_type,
+            "direction": direction,
+            "payload": payload
+        }
+        
+        # Add to simulation state
+        simulation_state[cp_id]["messages"].append(message_record)
+        
+        # Log to collector
+        await COLLECTOR.record_action(cp_id, f"Simulation_{message_type}", {
+            "direction": direction,
+            "payload": payload
+        })
+        
+        return JSONResponse({
+            "result": "message_logged",
+            "message": message_record
+        })
+    except Exception as e:
+        LOGGER.error(f"Error sending OCPP simulation message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/ocpp/simulate")
+async def list_active_simulations():
+    """List all active OCPP simulations"""
+    active_sims = {}
+    for cp_id, state in simulation_state.items():
+        if state["active"]:
+            active_sims[cp_id] = {
+                "ws_url": state["ws_url"],
+                "start_time": state["start_time"],
+                "message_count": len(state["messages"])
+            }
+    
+    return JSONResponse({
+        "active_simulations": active_sims,
+        "count": len(active_sims)
+    })
+
+
+# Global simulation state (in production, use Redis or database)
+simulation_state = {}
+
+
 @app.get("/api/auth/me")
 def auth_me(request: Request):
     user = require_authenticated_user(request)
@@ -1178,7 +1308,7 @@ def health():
     return JSONResponse(
         {
             "status": "ok",
-            "service": "Rback backend",
+            "service": "CityOs backend",
             "api": "/api/cp",
         }
     )
@@ -1201,8 +1331,8 @@ def login_page(request: Request):
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Rback Login</title>
-        <meta name="description" content="Rback login page" />
+        <title>CityOs Login</title>
+        <meta name="description" content="CityOs login page" />
         <link rel="canonical" href="/login" />
         <link rel="stylesheet" href="/frontend/styles.css" />
     </head>
@@ -1212,8 +1342,8 @@ def login_page(request: Request):
         <section class="login-screen shell">
             <div class="login-card single-column">
                 <div class="login-copy">
-                    <p class="eyebrow">Rback</p>
-                    <h1>Sign in to Rback</h1>
+                    <p class="eyebrow">CityOs</p>
+                    <h1>Sign in to CityOs</h1>
                     <p class="lede">Access the live OCPP dashboard, remote actions, and session activity from a single secure entry point.</p>
                 </div>
                 <form id="login-form" class="login-form" action="/api/auth/login?next=/cityos" method="post">
@@ -1241,6 +1371,17 @@ def cityos_dashboard(request: Request):
     return HTMLResponse(FRONTEND_INDEX_FILE.read_text(encoding="utf-8"))
 
 
+@app.get("/ocpp-simulator")
+async def ocpp_simulator_frontend():
+    """Serve the OCPP simulator frontend"""
+    try:
+        with open("templates/index.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Simulator frontend not found")
+
+
 def serve_dashboard(request: Request):
     email = request.query_params.get("email")
     password = request.query_params.get("password")
@@ -1248,8 +1389,6 @@ def serve_dashboard(request: Request):
         user = authenticate_user(email.strip(), password)
         if user is not None:
             return build_auth_response(user["email"], wants_json=False)
-
-        return RedirectResponse(url="/login?login=failed", status_code=status.HTTP_303_SEE_OTHER)
 
     if get_authenticated_user(request) is None:
         return RedirectResponse(url="/login?next=/cityos", status_code=status.HTTP_303_SEE_OTHER)
@@ -1260,518 +1399,23 @@ def serve_dashboard(request: Request):
     return JSONResponse(
         {
             "status": "ok",
-            "service": "Rback backend",
+            "service": "CityOs backend",
             "api": "/api/cp",
         }
     )
 
 
-@app.get("/api/cp")
-def get_cp_state(cp_id: str | None = None):
-    payload = build_cp_payload()
-
-    if not cp_id:
-        return JSONResponse(payload)
-
-    filtered_events = [event for event in payload["events"] if event.get("cp_id") == cp_id]
-    filtered_borne_logs = {cp_id: payload["borne_logs"].get(cp_id, [])}
-
-    filtered_payload = dict(payload)
-    filtered_payload["events"] = filtered_events
-    filtered_payload["borne_logs"] = filtered_borne_logs
-    filtered_payload["selected_cp_id"] = cp_id
-
-    if "message_count_by_cp" in filtered_payload:
-        filtered_payload["message_count_by_cp"] = {
-            cp_id: filtered_payload["message_count_by_cp"].get(cp_id, 0)
-        }
-
-    if "last_seen" in filtered_payload:
-        filtered_payload["last_seen"] = {
-            cp_id: filtered_payload["last_seen"].get(cp_id)
-        }
-
-    if "status_by_cp" in filtered_payload:
-        filtered_payload["status_by_cp"] = {
-            cp_id: filtered_payload["status_by_cp"].get(cp_id)
-        }
-
-    if "last_meter_values_by_cp" in filtered_payload:
-        filtered_payload["last_meter_values_by_cp"] = {
-            cp_id: filtered_payload["last_meter_values_by_cp"].get(cp_id)
-        }
-
-    if "open_transactions_by_cp" in filtered_payload:
-        filtered_payload["open_transactions_by_cp"] = {
-            cp_id: filtered_payload["open_transactions_by_cp"].get(cp_id)
-        }
-
-    return JSONResponse(filtered_payload)
-
-
-@app.get("/api/users")
-def list_users(request: Request):
-    require_role(request, USER_MANAGEMENT_ROLES)
-    return JSONResponse({"users": [public_user(user) for user in read_users()]})
-
-
-@app.post("/api/users")
-def create_user(request: Request, user: dict):
-    require_role(request, USER_MANAGEMENT_ROLES)
-    email = str(user.get("email") or "").strip().lower()
-    password = str(user.get("password") or "").strip()
-    role = str(user.get("role") or "operator").strip().lower()
-
-    if not email or not password:
-        raise HTTPException(status_code=400, detail="email and password are required")
-
-    if role not in {"admin", "steg", "operator"}:
-        raise HTTPException(status_code=400, detail="Invalid role")
-
-    users = read_users()
-    if any(str(existing.get("email", "")).strip().lower() == email for existing in users):
-        raise HTTPException(status_code=409, detail="User already exists")
-
-    record = {
-        "id": f"user-{len(users) + 1}",
-        "email": email,
-        "password_hash": hash_password(password),
-        "role": role,
-        "name": user.get("name") or email,
-        "active": bool(user.get("active", True)),
-        "created_at": utc_now_iso(),
-    }
-    users.append(record)
-    write_users(users)
-    return JSONResponse({"result": "ok", "user": public_user(record)})
-
-
-@app.get("/api/charge-points")
-def list_charge_points(request: Request):
-    require_authenticated_user(request)
-    payload = build_cp_payload()
-    return JSONResponse({"charge_points": payload.get("charge_points", [])})
-
-
-@app.post("/api/charge-points")
-def create_charge_point(request: Request, charge_point: dict):
-    require_role(request, FULL_MANAGEMENT_ROLES)
-    record = upsert_charge_point_record(charge_point)
-    return JSONResponse({"result": "ok", "charge_point": record})
-
-
-@app.post("/api/charge-points/{cp_id}/tariff")
-def update_charge_point_tariff_endpoint(request: Request, cp_id: str, payload: dict):
-    require_role(request, SUPERVISION_ROLES)
-    if not cp_id:
-        raise HTTPException(status_code=400, detail="cp_id is required")
-
-    tariff_per_kwh = payload.get("tariff_per_kwh")
-    if tariff_per_kwh is None:
-        raise HTTPException(status_code=400, detail="tariff_per_kwh is required")
-
-    updated = update_charge_point_tariff(cp_id, float(tariff_per_kwh))
-    return JSONResponse({"result": "ok", "charge_point": updated})
-
-
-@app.get("/api/sessions")
-def list_sessions(request: Request):
-    require_authenticated_user(request)
-    payload = build_cp_payload()
-    sessions = []
-    for cp_id, sess_list in (payload.get("sessions") or {}).items():
-        for session in sess_list:
-            sessions.append({"cp_id": cp_id, **session})
-    return JSONResponse({"sessions": sessions})
-
-
-@app.get("/api/billing/summary")
-def billing_summary(request: Request):
-    require_authenticated_user(request)
-    payload = build_cp_payload()
-    summary = payload.get("billing") or {}
-    return JSONResponse(summary)
-
-
-@app.post("/api/cp/{cp_id}/force_start")
-async def force_start(cp_id: str, connector_id: str = "1", meter_start: str = "0"):
-    """Prefer a real remote start, then fall back to server-side tracking."""
-    parsed_connector = int(connector_id) if connector_id else 1
-    parsed_meter = int(meter_start) if meter_start else 0
-    if OCPP_AVAILABLE and call is not None:
-        cp_instance = await COLLECTOR.get_charge_point(cp_id)
-        if cp_instance is not None:
-            remote_response = await remote_start(cp_id, connector_id=str(parsed_connector))
-            if getattr(remote_response, "status_code", 200) == 200:
-                return remote_response
-
-    tx_id = await COLLECTOR.start_transaction(cp_id, {"connector_id": parsed_connector, "meter_start": parsed_meter})
-    await COLLECTOR.record_action(cp_id, "ForceStart", {"transaction_id": tx_id, "connector_id": parsed_connector, "meter_start": parsed_meter})
-    return JSONResponse({"result": "started", "transaction_id": tx_id})
-
-
-@app.post("/api/cp/{cp_id}/force_stop")
-async def force_stop(cp_id: str, transaction_id: str = "", meter_stop: str = "0"):
-    """Force-stop a transaction server-side without requiring CP StopTransaction."""
-    # Parse transaction_id: accept string or int, convert empty to None
-    parsed_tx_id = None
-    if transaction_id:
-        try:
-            parsed_tx_id = int(transaction_id)
-        except (ValueError, TypeError):
-            pass
-    parsed_meter = int(meter_stop) if meter_stop else 0
-    payload = {"meter_stop": parsed_meter, "transaction_id": parsed_tx_id}
-    await COLLECTOR.record_action(cp_id, "ForceStop", payload)
-    await COLLECTOR.stop_transaction(cp_id, payload)
-    return JSONResponse({"result": "stopped", "transaction_id": parsed_tx_id})
-
-
-@app.post("/api/cp/{cp_id}/remote_start")
-async def remote_start(cp_id: str, connector_id: str = "", id_tag: str = ""):
-    """Send a real OCPP RemoteStartTransaction to the connected charger.
-
-    The API caller does not need to provide an id_tag; a server-side default is used.
-    """
-    parsed_connector = int(connector_id) if connector_id else None
-    if not OCPP_AVAILABLE or call is None:
-        return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
-
-    cp_instance = await COLLECTOR.get_charge_point(cp_id)
-    if cp_instance is None:
-        return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
-
-    effective_id_tag = id_tag or read_meta().get(cp_id, {}).get("remoteStartIdTag") or read_meta().get(cp_id, {}).get("defaultIdTag") or "REMOTE_START"
-
-    def build_request(include_connector: bool):
-        request_kwargs = {"id_tag": effective_id_tag}
-        if include_connector and parsed_connector is not None:
-            request_kwargs["connector_id"] = parsed_connector
-        return call.RemoteStartTransaction(**request_kwargs)
-
+@app.get("/ocpp-simulator")
+async def ocpp_simulator_frontend():
+    """Serve the OCPP simulator frontend"""
     try:
-        request = build_request(include_connector=True)
-        response = await cp_instance.call(request)
-        response_status = getattr(response, "status", None)
-
-        # Some chargers ignore or reject connector_id; retry once without it.
-        if str(response_status).lower() not in ("accepted", "accept", "ok") and parsed_connector is not None:
-            fallback_request = build_request(include_connector=False)
-            fallback_response = await cp_instance.call(fallback_request)
-            fallback_status = getattr(fallback_response, "status", None)
-            await COLLECTOR.record_action(
-                cp_id,
-                "RemoteStartTransaction",
-                {
-                    "connector_id": parsed_connector,
-                    "id_tag": effective_id_tag,
-                    "response_status": response_status,
-                    "fallback_used": True,
-                    "fallback_response_status": fallback_status,
-                },
-            )
-            return JSONResponse({
-                "result": "sent",
-                "response_status": fallback_status,
-                "connector_id": parsed_connector,
-                "connector_id_used": None,
-                "id_tag_used": effective_id_tag,
-                "fallback_used": True,
-                "initial_response_status": response_status,
-            })
-
-        await COLLECTOR.record_action(
-            cp_id,
-            "RemoteStartTransaction",
-            {
-                "connector_id": parsed_connector,
-                "id_tag": effective_id_tag,
-                "response_status": response_status,
-                "fallback_used": False,
-            },
-        )
-        return JSONResponse({
-            "result": "sent",
-            "response_status": response_status,
-            "connector_id": parsed_connector,
-            "connector_id_used": parsed_connector,
-            "id_tag_used": effective_id_tag,
-            "fallback_used": False,
-        })
-    except Exception as error:
-        LOGGER.exception("RemoteStartTransaction failed for %s: %s", cp_id, error)
-        return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)
+        with open("templates/index.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Simulator frontend not found")
 
 
-@app.post("/api/cp/{cp_id}/remote_stop")
-async def remote_stop(cp_id: str, transaction_id: str = ""):
-    """Send a real OCPP RemoteStopTransaction to the connected charger."""
-    if not OCPP_AVAILABLE or call is None:
-        return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
-
-    cp_instance = await COLLECTOR.get_charge_point(cp_id)
-    if cp_instance is None:
-        return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
-
-    parsed_tx_id = int(transaction_id) if transaction_id else None
-    effective_transaction_id = parsed_tx_id
-    if effective_transaction_id is None:
-        open_transaction = await COLLECTOR.get_open_transaction(cp_id)
-        if open_transaction is not None:
-            effective_transaction_id = normalize_transaction_id(open_transaction.get("transaction_id"))
-
-    if effective_transaction_id is None:
-        return JSONResponse(
-            {
-                "result": "error",
-                "detail": "Transaction ID is required when no transaction is currently open",
-            },
-            status_code=400,
-        )
-
-    request = call.RemoteStopTransaction(transaction_id=effective_transaction_id)
-    try:
-        response = await cp_instance.call(request)
-        await COLLECTOR.record_action(cp_id, "RemoteStopTransaction", {"transaction_id": effective_transaction_id, "response_status": getattr(response, "status", None)})
-        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "transaction_id": effective_transaction_id})
-    except Exception as error:
-        LOGGER.exception("RemoteStopTransaction failed for %s: %s", cp_id, error)
-        return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)
-
-
-@app.post("/api/cp/{cp_id}/remote_reboot")
-async def remote_reboot(cp_id: str, reset_type: str = "Soft"):
-    """Send a real OCPP Reset command (reboot) to the connected charger."""
-    if not OCPP_AVAILABLE or call is None:
-        return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
-
-    cp_instance = await COLLECTOR.get_charge_point(cp_id)
-    if cp_instance is None:
-        return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
-
-    normalized_reset = (reset_type or "Soft").strip().lower()
-    ocpp_reset_type = ResetType.soft if normalized_reset != "hard" else ResetType.hard
-
-    request = call.Reset(type_=ocpp_reset_type)
-    try:
-        response = await cp_instance.call(request)
-        await COLLECTOR.record_action(cp_id, "Reset", {"reset_type": str(ocpp_reset_type), "response_status": getattr(response, "status", None)})
-        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "reset_type": str(ocpp_reset_type)})
-    except Exception as error:
-        LOGGER.exception("Reset failed for %s: %s", cp_id, error)
-        return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)
-
-
-@app.post("/api/cp/{cp_id}/unlock_connector")
-async def unlock_connector(cp_id: str, connector_id: str = "1"):
-    """Send a real OCPP UnlockConnector command to the connected charger."""
-    if not OCPP_AVAILABLE or call is None:
-        return JSONResponse({"result": "error", "detail": "OCPP is not available on this server"}, status_code=503)
-
-    cp_instance = await COLLECTOR.get_charge_point(cp_id)
-    if cp_instance is None:
-        return JSONResponse({"result": "error", "detail": f"Charge point {cp_id} is not connected"}, status_code=404)
-
-    parsed_connector = int(connector_id) if connector_id else 1
-    request = call.UnlockConnector(connector_id=parsed_connector)
-    try:
-        response = await cp_instance.call(request)
-        await COLLECTOR.record_action(cp_id, "UnlockConnector", {"connector_id": parsed_connector, "response_status": getattr(response, "status", None)})
-        return JSONResponse({"result": "sent", "response_status": getattr(response, "status", None), "connector_id": parsed_connector})
-    except Exception as error:
-        LOGGER.exception("UnlockConnector failed for %s: %s", cp_id, error)
-        return JSONResponse({"result": "error", "detail": str(error)}, status_code=500)
-
-
-@app.get("/api/cp/{cp_id}/meta")
-def get_meta(cp_id: str):
-    meta = read_meta()
-    return JSONResponse(meta.get(cp_id, {}))
-
-
-@app.post("/api/cp/{cp_id}/meta")
-def set_meta(cp_id: str, meta: dict):
-    store = read_meta()
-    store[cp_id] = {**store.get(cp_id, {}), **meta}
-    write_meta(store)
-    return JSONResponse({"result": "ok", "meta": store[cp_id]})
-
-
-if OCPP_AVAILABLE:
-
-    class ChargePoint(cp):
-        @on("BootNotification")
-        async def on_boot_notification(self, charge_point_model, charge_point_vendor, **kwargs):
-            payload = normalize_boot_payload({
-                "charge_point_model": charge_point_model,
-                "charge_point_vendor": charge_point_vendor,
-                **kwargs,
-            })
-            await COLLECTOR.update_boot_notification(self.id, payload)
-            await COLLECTOR.record_action(self.id, "BootNotification", payload)
-            LOGGER.info("BootNotification from %s (%s)", self.id, charge_point_vendor)
-            return call_result.BootNotification(
-                current_time=utc_now_iso(),
-                interval=10,
-                status=RegistrationStatus.accepted,
-            )
-
-        @on("Heartbeat")
-        async def on_heartbeat(self):
-            await COLLECTOR.record_action(self.id, "Heartbeat", {})
-            return call_result.Heartbeat(current_time=utc_now_iso())
-
-        @on("Authorize")
-        async def on_authorize(self, id_tag: str, **kwargs):
-            await COLLECTOR.record_action(self.id, "Authorize", {"id_tag": id_tag, **kwargs})
-            return call_result.Authorize(
-                id_tag_info={"status": AuthorizationStatus.accepted}
-            )
-
-        @on("StatusNotification")
-        async def on_status_notification(self, connector_id: int, status: str, error_code: str, **kwargs):
-            payload = {
-                "connector_id": connector_id,
-                "status": status,
-                "error_code": error_code,
-                **kwargs,
-            }
-            await COLLECTOR.record_action(self.id, "StatusNotification", payload)
-            await COLLECTOR.update_status(self.id, payload)
-            return call_result.StatusNotification()
-
-        @on("MeterValues")
-        async def on_meter_values(self, connector_id: int, meter_value: list, **kwargs):
-            payload = {
-                "connector_id": connector_id,
-                "meter_value": meter_value,
-                **kwargs,
-            }
-            await COLLECTOR.record_action(self.id, "MeterValues", payload)
-            await COLLECTOR.update_meter_values(self.id, payload)
-            return call_result.MeterValues()
-
-        @on("StartTransaction")
-        async def on_start_transaction(
-            self,
-            connector_id: int,
-            id_tag: str,
-            meter_start: int,
-            timestamp: str,
-            **kwargs,
-        ):
-            payload = {
-                "connector_id": connector_id,
-                "id_tag": id_tag,
-                "meter_start": meter_start,
-                "timestamp": timestamp,
-                **kwargs,
-            }
-            transaction_id = await COLLECTOR.start_transaction(self.id, payload)
-            await COLLECTOR.record_action(
-                self.id,
-                "StartTransaction",
-                {**payload, "transaction_id": transaction_id},
-            )
-            return call_result.StartTransaction(
-                transaction_id=transaction_id,
-                id_tag_info={"status": AuthorizationStatus.accepted},
-            )
-
-        @on("StopTransaction")
-        async def on_stop_transaction(self, meter_stop: int, timestamp: str, transaction_id: int, **kwargs):
-            payload = {
-                "meter_stop": meter_stop,
-                "timestamp": timestamp,
-                "transaction_id": transaction_id,
-                **kwargs,
-            }
-            await COLLECTOR.record_action(self.id, "StopTransaction", payload)
-            await COLLECTOR.stop_transaction(self.id, payload)
-            return call_result.StopTransaction()
-
-        @on("DataTransfer")
-        async def on_data_transfer(self, vendor_id: str, **kwargs):
-            payload = {"vendor_id": vendor_id, **kwargs}
-            await COLLECTOR.record_action(self.id, "DataTransfer", payload)
-            return call_result.DataTransfer(
-                status=DataTransferStatus.accepted,
-                data="accepted",
-            )
-
-        @on("DiagnosticsStatusNotification")
-        async def on_diagnostics_status_notification(self, status: str, **kwargs):
-            await COLLECTOR.record_action(
-                self.id,
-                "DiagnosticsStatusNotification",
-                {"status": status, **kwargs},
-            )
-            return call_result.DiagnosticsStatusNotification()
-
-        @on("FirmwareStatusNotification")
-        async def on_firmware_status_notification(self, status: str, **kwargs):
-            await COLLECTOR.record_action(
-                self.id,
-                "FirmwareStatusNotification",
-                {"status": status, **kwargs},
-            )
-            return call_result.FirmwareStatusNotification()
-
-
-    class ASGIWebSocketAdapter:
-        def __init__(self, websocket):
-            self._ws = websocket
-            # expose a similar attribute used elsewhere
-            self.remote_address = websocket.client
-
-        async def send(self, message: str) -> None:
-            await self._ws.send_text(message)
-
-        async def recv(self) -> str:
-            # receive_text will raise WebSocketDisconnect when closed
-            data = await self._ws.receive_text()
-            return data
-
-        async def close(self) -> None:
-            await self._ws.close()
-
-
-    from fastapi import WebSocket, WebSocketDisconnect
-
-
-    @app.websocket("/{cp_id}")
-    async def cpms_websocket(cp_id: str, websocket: WebSocket):
-        offered_subprotocols = list(websocket.scope.get("subprotocols") or [])
-        selected_subprotocol = None
-        for candidate in ("ocpp1.6", "ocpp1.5"):
-            if candidate in offered_subprotocols:
-                selected_subprotocol = candidate
-                break
-
-        await websocket.accept(subprotocol=selected_subprotocol)
-        remote = websocket.client
-        path = websocket.url.path if hasattr(websocket, "url") else f"/{cp_id}"
-        LOGGER.info(
-            "New charger connected: %s from %s subprotocol=%s",
-            cp_id,
-            remote,
-            selected_subprotocol,
-        )
-        await COLLECTOR.register_connection(cp_id, str(remote), path)
-
-        adapter = ASGIWebSocketAdapter(websocket)
-        cp_instance = ChargePoint(cp_id, adapter)
-        await COLLECTOR.register_charge_point(cp_id, cp_instance)
-
-        try:
-            await cp_instance.start()
-        except WebSocketDisconnect:
-            LOGGER.info("WebSocket disconnect for %s", cp_id)
-        except Exception as error:
-            LOGGER.exception("Unexpected error for %s: %s", cp_id, error)
-        finally:
-            await COLLECTOR.unregister_charge_point(cp_id)
-            await COLLECTOR.register_disconnection(cp_id)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     uvicorn.run("app:app", host="0.0.0.0", port=port, log_level="info")

@@ -1,0 +1,12 @@
+[
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-23T11:41:46.935794+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Simulation_Heartbeat",
+    "payload": {
+      "direction": "sent",
+      "payload": {}
+    }
+  }
+]

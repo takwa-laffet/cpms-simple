@@ -1,0 +1,22 @@
+[
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-23T11:40:12.186802+00:00",
+    "cp_id": "SYSTEM",
+    "action": "SimulationStart",
+    "payload": {
+      "cp_id": "CP_TEST_001",
+      "ws_url": "ws://localhost:5001"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-23T11:40:55.758309+00:00",
+    "cp_id": "SYSTEM",
+    "action": "SimulationStart",
+    "payload": {
+      "cp_id": "CP_TEST_001",
+      "ws_url": "ws://localhost:5001"
+    }
+  }
+]
