@@ -667,7 +667,7 @@ def parse_meter_payload(payload: dict) -> list[dict]:
     return readings
 
 
-def aggregate_session_meter_values(session: dict, borne_log_entries: list[dict]) -> dict:
+def aggregate_session_meter_values(session: dict, borne_log_entries: list[dict], tariff_per_kwh: float | None = None) -> dict:
     """Aggregate meter readings for a single session into minute buckets and compute KPIs."""
     from datetime import timedelta
 
@@ -707,8 +707,9 @@ def aggregate_session_meter_values(session: dict, borne_log_entries: list[dict])
         session["charge_curve"] = []
         total_kwh = session.get("energy_kwh")
         session["kpis"] = {"total_kwh": total_kwh, "peak_kw": None, "avg_kw": None}
+        effective_tariff = tariff_per_kwh or BILLING_TARIFF_PER_KWH
         if total_kwh is not None:
-            session["price"] = round(float(total_kwh) * BILLING_TARIFF_PER_KWH, 2)
+            session["price"] = round(float(total_kwh) * effective_tariff, 2)
             session["currency"] = "dt"
         return session
 
@@ -791,19 +792,23 @@ def aggregate_session_meter_values(session: dict, borne_log_entries: list[dict])
         "peak_kw": (peak_power_w / 1000.0) if peak_power_w else None,
         "avg_kw": (avg_power_w / 1000.0) if avg_power_w else None,
     }
+    effective_tariff = tariff_per_kwh or BILLING_TARIFF_PER_KWH
     if energy_kwh is not None:
-        session["price"] = round(float(energy_kwh) * BILLING_TARIFF_PER_KWH, 2)
+        session["price"] = round(float(energy_kwh) * effective_tariff, 2)
         session["currency"] = "dt"
 
     return session
 
 
-def aggregate_sessions_metrics(sessions: dict[str, list[dict]], borne_logs: dict[str, list[dict]]) -> dict[str, list[dict]]:
+def aggregate_sessions_metrics(sessions: dict[str, list[dict]], borne_logs: dict[str, list[dict]], tariff_by_cp: dict[str, float] | None = None) -> dict[str, list[dict]]:
     # augment each session with charge_curve and KPIs
     for cp_id, sess_list in sessions.items():
         logs = borne_logs.get(cp_id, [])
+        cp_tariff = None
+        if tariff_by_cp and cp_id in tariff_by_cp:
+            cp_tariff = tariff_by_cp[cp_id]
         for i, s in enumerate(sess_list):
-            sess_list[i] = aggregate_session_meter_values(s, logs)
+            sess_list[i] = aggregate_session_meter_values(s, logs, cp_tariff)
     return sessions
 
 
@@ -893,7 +898,9 @@ def build_cp_payload() -> dict:
 
     sessions = build_sessions(payload["events"], payload["borne_logs"])
     # enrich sessions with meter-values aggregation and KPIs
-    sessions = aggregate_sessions_metrics(sessions, payload["borne_logs"])
+    # build tariff lookup by cp_id from registry
+    tariff_by_cp = {cp_id: rec.get("tariff_per_kwh") for cp_id, rec in registry.items() if rec.get("tariff_per_kwh")}
+    sessions = aggregate_sessions_metrics(sessions, payload["borne_logs"], tariff_by_cp)
     payload["sessions"] = sessions
 
     # basic energy aggregates
@@ -918,7 +925,7 @@ def build_cp_payload() -> dict:
         "currency": "dt",
         "total_energy_kwh": total_kwh,
         "estimated_revenue": round(total_kwh * BILLING_TARIFF_PER_KWH, 2),
-        "revenue_per_cp": {cp_id: round(kwh * BILLING_TARIFF_PER_KWH, 2) for cp_id, kwh in kwh_per_cp.items()},
+        "revenue_per_cp": {cp_id: round(kwh * tariff_by_cp.get(cp_id, BILLING_TARIFF_PER_KWH), 2) for cp_id, kwh in kwh_per_cp.items()},
     }
     payload["billing"] = billing
 
