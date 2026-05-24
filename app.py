@@ -1183,7 +1183,7 @@ async def start_ocpp_simulation(request: Request):
         # Import and start the auto simulator
         from auto_simulator import start_auto_simulator, simulation_state as auto_sim_state
         
-        result = await start_auto_simulator(cp_id, ws_url)
+        result = await start_auto_simulator(cp_id, ws_url, COLLECTOR)
         
         if not result and cp_id in auto_sim_state:
             return JSONResponse({

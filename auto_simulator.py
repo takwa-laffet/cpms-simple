@@ -87,6 +87,9 @@ class AutoChargePointSimulator:
         try:
             self.ws = await websockets.connect(url, subprotocols=["ocpp1.6"])
             LOGGER.info(f"[{self.cp_id}] Connected")
+            # Register connection with collector
+            if self.collector is not None:
+                await self.collector.register_connection(self.cp_id, self.ws.remote_address, self.ws.path)
             return True
         except Exception as e:
             LOGGER.error(f"[{self.cp_id}] Connection failed: {e}")
@@ -95,6 +98,9 @@ class AutoChargePointSimulator:
     async def send_boot_notification(self):
         payload = {"charge_point_model": "Auto-Sim", "charge_point_vendor": "CityOs", "firmware_version": "1.0"}
         await _send_ocpp_message(self.cp_id, "BootNotification", payload)
+        # Update boot notification in collector
+        if self.collector is not None:
+            await self.collector.update_boot_notification(self.cp_id, payload)
         LOGGER.info(f"[{self.cp_id}] BootNotification")
 
     async def send_heartbeat(self):
@@ -105,12 +111,20 @@ class AutoChargePointSimulator:
 
     async def send_status_notification(self, status: str):
         await _send_ocpp_message(self.cp_id, "StatusNotification", {"connector_id": 1, "status": status})
+        # Update status in collector
+        if self.collector is not None:
+            await self.collector.update_status(self.cp_id, {"status": status})
         LOGGER.info(f"[{self.cp_id}] Status: {status}")
 
     async def start_transaction(self):
         await _send_ocpp_message(self.cp_id, "StartTransaction", {"id_tag": self.id_tag})
+        # Start transaction in collector
+        if self.collector is not None:
+            tx_id = await self.collector.start_transaction(self.cp_id, {"id_tag": self.id_tag})
+            self.transaction_id = tx_id
+        else:
+            self.transaction_id = int(datetime.now().timestamp())
         LOGGER.info(f"[{self.cp_id}] StartTransaction")
-        self.transaction_id = int(datetime.now().timestamp())
         return self.transaction_id
 
     async def send_meter_values(self, energy_wh: int):
@@ -120,6 +134,9 @@ class AutoChargePointSimulator:
     async def stop_transaction(self):
         if self.transaction_id:
             await _send_ocpp_message(self.cp_id, "StopTransaction", {"transaction_id": self.transaction_id})
+            # Stop transaction in collector
+            if self.collector is not None:
+                await self.collector.stop_transaction(self.cp_id, {"transaction_id": self.transaction_id})
             LOGGER.info(f"[{self.cp_id}] StopTransaction")
             self.transaction_id = None
 
@@ -149,18 +166,27 @@ class AutoChargePointSimulator:
 
     def stop(self):
         self.running = False
+        # Notify collector of disconnection
+        if self.collector is not None and self.ws is not None:
+            # Create a synchronous task to notify collector (since we're in a sync method)
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self.collector.register_disconnection(self.cp_id, "simulator_stopped"))
+            except RuntimeError:
+                # No event loop, skip async notification
+                pass
 
 
 simulation_state = {}
 
 
-async def start_auto_simulator(cp_id: str, ws_url: str = "ws://localhost:5000"):
+async def start_auto_simulator(cp_id: str, ws_url: str = "ws://localhost:5000", collector=None):
     global simulation_state
     if cp_id in simulation_state and simulation_state[cp_id].get("running"):
         return False
-    # Import COLLECTOR from app to pass to simulator
-    from app import COLLECTOR
-    sim = AutoChargePointSimulator(cp_id, ws_url, COLLECTOR)
+    sim = AutoChargePointSimulator(cp_id, ws_url, collector)
     simulation_state[cp_id] = {"simulator": sim, "running": True, "start_time": utc_now_iso(), "ws_url": ws_url}
     asyncio.create_task(sim.run())
     return True
