@@ -3,6 +3,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger("auto_simulator")
@@ -48,7 +49,7 @@ def _append_borne_json(cp_id: str, item: dict) -> None:
     cp_file.write_text(json.dumps(existing, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
-async def _send_ocpp_message(cp_id: str, action: str, payload: dict) -> None:
+async def _send_ocpp_message(cp_id: str, action: str, payload: dict, collector=None) -> None:
     event = {
         "event_type": "ocpp_message",
         "timestamp": utc_now_iso(),
@@ -58,10 +59,13 @@ async def _send_ocpp_message(cp_id: str, action: str, payload: dict) -> None:
     }
     _append_jsonl(EVENTS_FILE, event)
     _append_borne_json(cp_id, event)
+    # Send to backend collector if available
+    if collector is not None:
+        await collector.record_action(cp_id, action, payload)
 
 
 class AutoChargePointSimulator:
-    def __init__(self, cp_id: str, ws_url: str):
+    def __init__(self, cp_id: str, ws_url: str, collector=None):
         self.cp_id = cp_id
         self.ws_url = ws_url.rstrip("/")
         self.ws = None
@@ -72,6 +76,7 @@ class AutoChargePointSimulator:
         self.id_tag = f"SIM_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         self.connector_id = 1
         self._tasks = []
+        self.collector = collector
 
     async def connect(self):
         if not OCPP_AVAILABLE:
@@ -153,7 +158,9 @@ async def start_auto_simulator(cp_id: str, ws_url: str = "ws://localhost:5000"):
     global simulation_state
     if cp_id in simulation_state and simulation_state[cp_id].get("running"):
         return False
-    sim = AutoChargePointSimulator(cp_id, ws_url)
+    # Import COLLECTOR from app to pass to simulator
+    from app import COLLECTOR
+    sim = AutoChargePointSimulator(cp_id, ws_url, COLLECTOR)
     simulation_state[cp_id] = {"simulator": sim, "running": True, "start_time": utc_now_iso(), "ws_url": ws_url}
     asyncio.create_task(sim.run())
     return True
