@@ -1002,6 +1002,10 @@ class DataCollector:
         async with self._lock:
             return self.charge_points.get(cp_id)
 
+    async def upsert_charge_point_record(self, record: dict) -> dict:
+        async with self._lock:
+            return upsert_charge_point_record(record)
+
     async def update_boot_notification(self, cp_id: str, boot_payload: dict) -> None:
         async with self._lock:
             normalized = normalize_boot_payload(boot_payload)
@@ -1102,7 +1106,6 @@ class DataCollector:
             self._append_jsonl(EVENTS_FILE, event)
             self._append_borne_json(cp_id, event)
             self._write_state()
-
 
 COLLECTOR = DataCollector()
 app = FastAPI()
