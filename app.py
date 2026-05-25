@@ -86,6 +86,13 @@ def current_unix_timestamp() -> int:
     return int(datetime.now(timezone.utc).timestamp())
 
 
+def env_flag(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _auth_signature(payload: str) -> str:
     digest = hmac.new(AUTH_SECRET_KEY.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).digest()
     return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
@@ -1114,11 +1121,16 @@ app = FastAPI()
 # Auto-start OCPP simulation for CP_TEST_001 on server startup
 @app.on_event("startup")
 async def startup_event():
-    """Automatically start OCPP simulation for CP_TEST_001 when server starts"""
+    """Optionally start OCPP simulation for CP_TEST_001 when server starts."""
     try:
+        if not env_flag("AUTO_START_CP_TEST_001", default=False):
+            LOGGER.info("Auto-start simulator disabled; set AUTO_START_CP_TEST_001=1 to enable it")
+            return
+
+        ws_url = os.environ.get("AUTO_START_CP_TEST_001_WS_URL", "ws://localhost:5000")
         from auto_simulator import start_auto_simulator
-        # Start simulation for CP_TEST_001 with default WebSocket URL
-        await start_auto_simulator("CP_TEST_001", "ws://localhost:5000", COLLECTOR)
+
+        await start_auto_simulator("CP_TEST_001", ws_url, COLLECTOR)
         LOGGER.info("Auto-started OCPP simulation for CP_TEST_001")
     except Exception as e:
         LOGGER.error(f"Failed to auto-start OCPP simulation: {e}")
