@@ -72,6 +72,7 @@ class AutoChargePointSimulator:
         self.ws_url = ws_url.rstrip("/")
         self.ws = None
         self.running = False
+        self.started_at = None
         self.heartbeat_interval = 10  # Changed from 30 to 10 seconds
         self.meter_start = 0
         self.transaction_id = None
@@ -84,9 +85,39 @@ class AutoChargePointSimulator:
             "charge_point_model": "CP_TEST_001",
             "charge_point_vendor": "TestVendor",
             "firmware_version": "1.0.0",
-            "serial_number": "CP_TEST_001_SN_001",
+            "serial_number": f"{self.cp_id}_SN_001",
+            "ip_address": "192.168.1.100",
+            "iccid": "8930000000000000000",
+            "imsi": "208000000000000",
+            "commissioning_date": "2026-01-15",
+            "error_code": "NoError",
+            "assigned_user": "operator@rback.local",
             "meter_type": "Electronic",
-            "meter_serial_number": "CP_TEST_001_MSN_001"
+            "meter_serial_number": f"{self.cp_id}_MSN_001",
+        }
+
+    def _format_uptime(self) -> str:
+        if self.started_at is None:
+            return "0 days 00:00:00"
+        elapsed = datetime.now(timezone.utc) - self.started_at
+        total_seconds = int(elapsed.total_seconds())
+        days, remainder = divmod(total_seconds, 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{days} days {hours:02d}:{minutes:02d}:{seconds:02d}"
+
+    def _build_fake_metadata(self) -> dict:
+        return {
+            "manufacturer": self.device_info["charge_point_vendor"],
+            "model": self.device_info["charge_point_model"],
+            "serialNumber": self.device_info["serial_number"],
+            "firmwareVersion": self.device_info["firmware_version"],
+            "ipAddress": self.device_info["ip_address"],
+            "iccid": self.device_info["iccid"],
+            "imsi": self.device_info["imsi"],
+            "commissioningDate": self.device_info["commissioning_date"],
+            "assigned_user": self.device_info["assigned_user"],
+            "uptime": self._format_uptime(),
         }
 
     async def connect(self):
@@ -110,7 +141,16 @@ class AutoChargePointSimulator:
         payload = {
             "charge_point_model": self.device_info["charge_point_model"],
             "charge_point_vendor": self.device_info["charge_point_vendor"],
-            "firmware_version": self.device_info["firmware_version"]
+            "firmware_version": self.device_info["firmware_version"],
+            "serial_number": self.device_info["serial_number"],
+            "ipAddress": self.device_info["ip_address"],
+            "iccid": self.device_info["iccid"],
+            "imsi": self.device_info["imsi"],
+            "commissioningDate": self.device_info["commissioning_date"],
+            "error_code": self.device_info["error_code"],
+            "errorCode": self.device_info["error_code"],
+            "assigned_user": self.device_info["assigned_user"],
+            "uptime": self._format_uptime(),
         }
         await _send_ocpp_message(self.cp_id, "BootNotification", payload)
         # Update boot notification in collector
@@ -120,15 +160,22 @@ class AutoChargePointSimulator:
 
     async def send_heartbeat(self):
         while self.running:
+            if self.collector is not None:
+                await self.collector.record_action(self.cp_id, "MetadataUpdate", {"metadata": self._build_fake_metadata()})
             await _send_ocpp_message(self.cp_id, "Heartbeat", {})
             LOGGER.info(f"[{self.cp_id}] Heartbeat")
             await asyncio.sleep(self.heartbeat_interval)
 
     async def send_status_notification(self, status: str):
-        await _send_ocpp_message(self.cp_id, "StatusNotification", {"connector_id": 1, "status": status})
+        await _send_ocpp_message(self.cp_id, "StatusNotification", {
+            "connector_id": 1,
+            "status": status,
+            "error_code": self.device_info["error_code"],
+            "errorCode": self.device_info["error_code"],
+        })
         # Update status in collector
         if self.collector is not None:
-            await self.collector.update_status(self.cp_id, {"status": status})
+            await self.collector.update_status(self.cp_id, {"status": status, "error_code": self.device_info["error_code"]})
         LOGGER.info(f"[{self.cp_id}] Status: {status}")
 
     async def start_transaction(self):
@@ -143,7 +190,13 @@ class AutoChargePointSimulator:
         return self.transaction_id
 
     async def send_meter_values(self, energy_wh: int):
-        await _send_ocpp_message(self.cp_id, "MeterValues", {"connector_id": 1, "energy_wh": energy_wh})
+        await _send_ocpp_message(self.cp_id, "MeterValues", {
+            "connector_id": 1,
+            "energy_wh": energy_wh,
+            "last_meter_value": energy_wh,
+        })
+        if self.collector is not None:
+            await self.collector.update_meter_values(self.cp_id, {"energy_wh": energy_wh, "last_meter_value": energy_wh})
         LOGGER.info(f"[{self.cp_id}] MeterValues: {energy_wh}Wh")
 
     async def stop_transaction(self):
@@ -170,6 +223,7 @@ class AutoChargePointSimulator:
 
     async def run(self):
         self.running = True
+        self.started_at = datetime.now(timezone.utc)
         await self.connect()
         await self.send_boot_notification()
         # Register charge point and set metadata for complete General Info display
@@ -189,21 +243,12 @@ class AutoChargePointSimulator:
             # Set additional metadata
             await self.collector.record_action("SYSTEM", "MetadataUpdate", {
                 "cp_id": self.cp_id,
-                "metadata": {
-                    "manufacturer": self.device_info["charge_point_vendor"],
-                    "model": self.device_info["charge_point_model"],
-                    "serialNumber": self.device_info.get("serial_number", f"{self.cp_id}_SN_001"),
-                    "firmwareVersion": self.device_info["firmware_version"],
-                    "ipAddress": "192.168.1.100",
-                    "iccid": "8930000000000000000",
-                    "imsi": "208000000000000",
-                    "commissioningDate": "2026-01-15",
-                    "uptime": "0 days 00:00:00",  # Will be updated dynamically
-                }
+                "metadata": self._build_fake_metadata(),
             })
         LOGGER.info(f"[{self.cp_id}] Registered charge point and set metadata")
         # Start with Preparing status, then change to Available after 3 minutes
         await self.send_status_notification("Preparing")
+        await self.send_meter_values(0)
         LOGGER.info(f"[{self.cp_id}] Starting in Preparing state, will go Available in 3 minutes")
         await asyncio.sleep(180)  # Wait 3 minutes (180 seconds)
         if self.running:  # Check if still running after sleep

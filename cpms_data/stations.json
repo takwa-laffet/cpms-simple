@@ -1,0 +1,11 @@
+[
+  {
+    "id": "test-1",
+    "name": "Test Station Updated Form",
+    "zone": "zoneB",
+    "location": null,
+    "notes": null,
+    "created_at": "2026-05-25T21:40:31.724894+00:00",
+    "updated_at": "2026-05-25T21:41:57.628203+00:00"
+  }
+]

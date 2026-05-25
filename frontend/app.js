@@ -117,12 +117,12 @@ function getRoleProfile(role) {
      return {
        role: 'institution',
        label: 'Supervision',
-       description: 'Supervision access: monitoring, charge-point data, billing, and tariff updates. (No remote commands)',
+       description: 'Institution access: monitoring, charge-point data, billing, administration, and remote commands.',
        canManageChargePoints: true,
        canEditTariff: true,
-       canManageUsers: false,
+       canManageUsers: true,
        canSeeBilling: true,
-       canRemoteControl: false,
+       canRemoteControl: true,
      };
    }
 
@@ -236,7 +236,6 @@ function setCurrentUser(user) {
     els.userList.hidden = !profile.canManageUsers;
   }
 
-  // Hide command grid for institution role (no remote commands allowed)
   if (els.commandGrid) {
     els.commandGrid.hidden = !profile.canRemoteControl;
   }
@@ -674,8 +673,46 @@ function renderStations(data) {
         <button class="btn btn-secondary btn-sm station-edit" data-id="${st.id}">Edit</button>
       </div>
     `;
+    // wire edit button
+    const editBtn = el.querySelector('.station-edit');
+    if (editBtn) {
+      editBtn.addEventListener('click', () => {
+        enterStationEditMode(st);
+      });
+    }
     els.stationList.appendChild(el);
   });
+}
+
+function enterStationEditMode(station) {
+  if (!els.stationForm) return;
+  els.stationForm.dataset.editingId = String(station.id || station.station_id || station.name || '');
+  els.stationForm.querySelector('[name="id"]').value = station.id || station.station_id || '';
+  els.stationForm.querySelector('[name="name"]').value = station.name || '';
+  els.stationForm.querySelector('[name="zone"]').value = station.zone || '';
+  els.stationForm.querySelector('[name="location"]').value = station.location || '';
+  els.stationForm.querySelector('[name="notes"]').value = station.notes || '';
+  // show cancel button when editing
+  let cancel = els.stationForm.querySelector('.station-cancel-btn');
+  if (!cancel) {
+    cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'btn btn-secondary station-cancel-btn';
+    cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', () => exitStationEditMode());
+    els.stationForm.appendChild(cancel);
+  }
+  const submit = els.stationForm.querySelector('button[type="submit"]');
+  if (submit) submit.textContent = 'Update Station';
+}
+
+function exitStationEditMode() {
+  if (!els.stationForm) return;
+  delete els.stationForm.dataset.editingId;
+  const cancel = els.stationForm.querySelector('.station-cancel-btn');
+  if (cancel) cancel.remove();
+  const submit = els.stationForm.querySelector('button[type="submit"]');
+  if (submit) submit.textContent = 'Save Station';
 }
 
 function renderEvents(data, selectedCpId) {
@@ -782,12 +819,8 @@ function wireAdministrationForms() {
       };
 
       try {
-         const endpoint = profile.role === 'institution'
-          ? `/api/charge-points/${encodeURIComponent(body.cp_id)}/tariff`
-          : '/api/charge-points';
-         const requestBody = profile.role === 'institution'
-          ? { tariff_per_kwh: body.tariff_per_kwh }
-          : body;
+        const endpoint = '/api/charge-points';
+        const requestBody = body;
 
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -800,9 +833,7 @@ function wireAdministrationForms() {
           throw new Error(payload.detail || 'Unable to save charge point');
         }
         els.chargePointForm.reset();
-         showToast(profile.role === 'institution'
-          ? `Tariff updated for ${payload.charge_point.cp_id}`
-          : `Charge point ${payload.charge_point.cp_id} saved`, 'success');
+        showToast(`Charge point ${payload.charge_point.cp_id} saved`, 'success');
         await loadData();
       } catch (error) {
         showToast(error.message, 'error');
@@ -811,8 +842,11 @@ function wireAdministrationForms() {
   }
 
   if (els.stationForm) {
+    // station form supports create and edit modes. When in edit mode the form
+    // element will have `data-editing-id` set to the station id.
     els.stationForm.addEventListener('submit', async (event) => {
       event.preventDefault();
+      const editingId = els.stationForm.dataset.editingId || null;
       const formData = new FormData(els.stationForm);
       const body = {
         id: String(formData.get('id') || '').trim(),
@@ -823,14 +857,19 @@ function wireAdministrationForms() {
       };
 
       try {
-        const response = await fetch('/api/stations', {
-          method: 'POST',
+        const endpoint = editingId ? `/api/stations/${encodeURIComponent(editingId)}` : '/api/stations';
+        const method = editingId ? 'PUT' : 'POST';
+
+        const response = await fetch(endpoint, {
+          method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
           credentials: 'include'
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.detail || 'Unable to save station');
+        // reset edit state if any
+        exitStationEditMode();
         els.stationForm.reset();
         showToast(`Station ${payload.station.id} saved`, 'success');
         await loadData();

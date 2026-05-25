@@ -1,0 +1,61 @@
+{
+  "CP_ROUTE_001": {
+    "manufacturer": "TestVendor",
+    "model": "CP_TEST_001",
+    "serialNumber": "CP_ROUTE_001_SN_001",
+    "cp_id": "CP_ROUTE_001",
+    "created_at": "2026-05-25T13:38:50.515318+00:00",
+    "updated_at": "2026-05-25T23:20:56.541799+00:00",
+    "rebootLogs": [
+      {
+        "timestamp": "2026-05-25T13:38:50.552837+00:00",
+        "reset_type": "Soft"
+      },
+      {
+        "timestamp": "2026-05-25T13:39:35.794609+00:00",
+        "reset_type": "Soft"
+      },
+      {
+        "timestamp": "2026-05-25T22:10:58.087803+00:00",
+        "reset_type": "Soft"
+      },
+      {
+        "timestamp": "2026-05-25T22:51:47.723415+00:00",
+        "reset_type": "Soft"
+      },
+      {
+        "timestamp": "2026-05-25T22:51:49.367552+00:00",
+        "reset_type": "Soft"
+      },
+      {
+        "timestamp": "2026-05-25T23:07:31.513540+00:00",
+        "reset_type": "Soft"
+      },
+      {
+        "timestamp": "2026-05-25T23:11:20.553895+00:00",
+        "reset_type": "Soft"
+      }
+    ],
+    "firmwareVersion": "1.0.0",
+    "ipAddress": "192.168.1.100",
+    "iccid": "8930000000000000000",
+    "imsi": "208000000000000",
+    "commissioningDate": "2026-01-15",
+    "uptime": "0 days 00:23:44",
+    "assigned_user": "operator@rback.local"
+  },
+  "SYSTEM": {
+    "manufacturer": "TestVendor",
+    "model": "CP_TEST_001",
+    "serialNumber": "CP_ROUTE_001_SN_001",
+    "firmwareVersion": "1.0.0",
+    "ipAddress": "192.168.1.100",
+    "iccid": "8930000000000000000",
+    "imsi": "208000000000000",
+    "commissioningDate": "2026-01-15",
+    "uptime": "0 days 00:00:00",
+    "cp_id": "SYSTEM",
+    "created_at": "2026-05-25T22:45:08.940874+00:00",
+    "updated_at": "2026-05-25T22:45:08.940887+00:00"
+  }
+}

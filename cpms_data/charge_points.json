@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "cp_id": "CP_ROUTE_001",
+    "label": "CP_TEST_001",
+    "site": "Test Site",
+    "connector_count": 1,
+    "tariff_per_kwh": 0.35,
+    "notes": null,
+    "created_at": "2026-05-25T13:38:50.499168+00:00",
+    "updated_at": "2026-05-25T23:12:02.883799+00:00",
+    "station_id": null,
+    "status": "available"
+  }
+]

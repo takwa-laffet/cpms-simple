@@ -71,7 +71,7 @@ AUTH_SECRET_KEY = os.environ.get("AUTH_SECRET_KEY", "cityos-dev-secret")
 AUTH_SESSION_TTL_SECONDS = int(os.environ.get("AUTH_SESSION_TTL_SECONDS", "86400"))
 BILLING_TARIFF_PER_KWH = float(os.environ.get("CITYOS_TARIFF_PER_KWH", "0.35"))
 SUPERVISION_ROLES = {"admin", "institution"}
-FULL_MANAGEMENT_ROLES = {"admin"}
+FULL_MANAGEMENT_ROLES = {"admin", "institution"}
 USER_MANAGEMENT_ROLES = {"admin"}
 
 
@@ -416,14 +416,21 @@ def update_charge_point_tariff(cp_id: str, tariff_per_kwh: float) -> dict:
 
 def build_charge_point_view(cp_id: str, snapshot: dict, general_info: dict, registry_record: dict | None) -> dict:
     status_payload = snapshot.get("status_by_cp", {}).get(cp_id) or {}
-    is_connected = cp_id in COLLECTOR.active_connections
     ocpp_status = status_payload.get("status")
+    # Consider a CP 'connected' either when there's an active WS connection
+    # or when recent status updates indicate availability (useful for simulators
+    # that may not open a real WS but still report status).
+    available_states = {"available", "charging", "preparing", "reserved"}
+    is_connected = cp_id in COLLECTOR.active_connections or (
+        isinstance(ocpp_status, str) and ocpp_status.strip().lower() in available_states
+    )
     if is_connected:
         visible_status = ocpp_status or "Available"
     else:
         visible_status = "Offline"
 
     current_tx = snapshot.get("open_transactions_by_cp", {}).get(cp_id) or {}
+    last_meter_payload = snapshot.get("last_meter_values_by_cp", {}).get(cp_id) or {}
     tariff = float((registry_record or {}).get("tariff_per_kwh") or BILLING_TARIFF_PER_KWH)
     energy_kwh = 0.0
     for session in (snapshot.get("sessions", {}) or {}).get(cp_id, []):
@@ -438,6 +445,9 @@ def build_charge_point_view(cp_id: str, snapshot: dict, general_info: dict, regi
         "connection_state": "connected" if is_connected else "offline",
         "model": general_info.get("model"),
         "serial_number": general_info.get("serial_number"),
+        "assigned_user": (registry_record or {}).get("assigned_user") or general_info.get("assigned_user"),
+        "error_code": status_payload.get("error_code") or status_payload.get("errorCode"),
+        "last_meter_value": last_meter_payload.get("last_meter_value") or last_meter_payload.get("energy_wh"),
         "connector_count": (registry_record or {}).get("connector_count") or 1,
         "tariff_per_kwh": tariff,
         "last_seen": snapshot.get("last_seen", {}).get(cp_id),
@@ -958,6 +968,7 @@ def build_cp_payload() -> dict:
             "iccid": m.get("iccid"),
             "imsi": m.get("imsi"),
             "commissioning_date": m.get("commissioningDate") or m.get("commissioning_date"),
+            "assigned_user": m.get("assigned_user"),
             "uptime": m.get("uptime"),
             "cpms_connection_status": "connected" if cp_id in COLLECTOR.active_connections else "disconnected",
             "reboot_logs": m.get("rebootLogs") or m.get("reboot_logs") or [],
@@ -1145,6 +1156,11 @@ class DataCollector:
             self.last_seen[cp_id] = event["timestamp"]
             self._append_jsonl(EVENTS_FILE, event)
             self._append_borne_json(cp_id, event)
+            if action == "MetadataUpdate" and isinstance(event["payload"], dict):
+                metadata_payload = event["payload"].get("metadata")
+                if isinstance(metadata_payload, dict):
+                    metadata_cp_id = str(event["payload"].get("cp_id") or cp_id).strip() or cp_id
+                    update_metadata_store(metadata_cp_id, metadata_payload)
             self._write_state()
 
     async def update_status(self, cp_id: str, status_payload: dict) -> None:

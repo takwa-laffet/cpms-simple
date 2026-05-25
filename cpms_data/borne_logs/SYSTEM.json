@@ -28,5 +28,265 @@
       "cp_id": "CP_TEST_001",
       "ws_url": "ws://localhost:5000"
     }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T13:38:50.509718+00:00",
+    "cp_id": "SYSTEM",
+    "action": "UserUpsert",
+    "payload": {
+      "email": "route-user@example.com",
+      "role": "operator"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T13:39:35.750816+00:00",
+    "cp_id": "SYSTEM",
+    "action": "UserUpsert",
+    "payload": {
+      "email": "route-user@example.com",
+      "role": "operator"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T21:40:31.725324+00:00",
+    "cp_id": "SYSTEM",
+    "action": "StationUpsert",
+    "payload": {
+      "station_id": "test-1",
+      "station": {
+        "id": "test-1",
+        "name": "Test Station",
+        "zone": "zoneA",
+        "location": "HQ",
+        "notes": null,
+        "created_at": "2026-05-25T21:40:31.724894+00:00",
+        "updated_at": "2026-05-25T21:40:31.724894+00:00"
+      }
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T21:40:58.151726+00:00",
+    "cp_id": "SYSTEM",
+    "action": "StationUpdate",
+    "payload": {
+      "station_id": "test-1"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T21:41:57.628701+00:00",
+    "cp_id": "SYSTEM",
+    "action": "StationUpdate",
+    "payload": {
+      "station_id": "test-1"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T22:45:08.916847+00:00",
+    "cp_id": "SYSTEM",
+    "action": "SimulationStart",
+    "payload": {
+      "cp_id": "CP_ROUTE_001",
+      "ws_url": "ws://127.0.0.1:5001"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T22:45:08.939044+00:00",
+    "cp_id": "SYSTEM",
+    "action": "MetadataUpdate",
+    "payload": {
+      "cp_id": "CP_ROUTE_001",
+      "metadata": {
+        "manufacturer": "TestVendor",
+        "model": "CP_TEST_001",
+        "serialNumber": "CP_ROUTE_001_SN_001",
+        "firmwareVersion": "1.0.0",
+        "ipAddress": "192.168.1.100",
+        "iccid": "8930000000000000000",
+        "imsi": "208000000000000",
+        "commissioningDate": "2026-01-15",
+        "uptime": "0 days 00:00:00"
+      }
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T22:47:42.319920+00:00",
+    "cp_id": "SYSTEM",
+    "action": "SimulationStart",
+    "payload": {
+      "cp_id": "CP_ROUTE_001",
+      "ws_url": "ws://127.0.0.1:5001"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T22:47:42.337226+00:00",
+    "cp_id": "SYSTEM",
+    "action": "MetadataUpdate",
+    "payload": {
+      "cp_id": "CP_ROUTE_001",
+      "metadata": {
+        "manufacturer": "TestVendor",
+        "model": "CP_TEST_001",
+        "serialNumber": "CP_ROUTE_001_SN_001",
+        "firmwareVersion": "1.0.0",
+        "ipAddress": "192.168.1.100",
+        "iccid": "8930000000000000000",
+        "imsi": "208000000000000",
+        "commissioningDate": "2026-01-15",
+        "uptime": "0 days 00:00:00"
+      }
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T22:55:38.824333+00:00",
+    "cp_id": "SYSTEM",
+    "action": "SimulationStart",
+    "payload": {
+      "cp_id": "CP_ROUTE_001",
+      "ws_url": "ws://127.0.0.1:5001"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T22:55:38.837232+00:00",
+    "cp_id": "SYSTEM",
+    "action": "MetadataUpdate",
+    "payload": {
+      "cp_id": "CP_ROUTE_001",
+      "metadata": {
+        "manufacturer": "TestVendor",
+        "model": "CP_TEST_001",
+        "serialNumber": "CP_ROUTE_001_SN_001",
+        "firmwareVersion": "1.0.0",
+        "ipAddress": "192.168.1.100",
+        "iccid": "8930000000000000000",
+        "imsi": "208000000000000",
+        "commissioningDate": "2026-01-15",
+        "assigned_user": "operator@rback.local",
+        "uptime": "0 days 00:00:00"
+      }
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T22:57:11.673419+00:00",
+    "cp_id": "SYSTEM",
+    "action": "SimulationStart",
+    "payload": {
+      "cp_id": "CP_ROUTE_001",
+      "ws_url": "ws://127.0.0.1:5001"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T22:57:11.687070+00:00",
+    "cp_id": "SYSTEM",
+    "action": "MetadataUpdate",
+    "payload": {
+      "cp_id": "CP_ROUTE_001",
+      "metadata": {
+        "manufacturer": "TestVendor",
+        "model": "CP_TEST_001",
+        "serialNumber": "CP_ROUTE_001_SN_001",
+        "firmwareVersion": "1.0.0",
+        "ipAddress": "192.168.1.100",
+        "iccid": "8930000000000000000",
+        "imsi": "208000000000000",
+        "commissioningDate": "2026-01-15",
+        "assigned_user": "operator@rback.local",
+        "uptime": "0 days 00:00:00"
+      }
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T23:07:31.077247+00:00",
+    "cp_id": "SYSTEM",
+    "action": "StationUpdate",
+    "payload": {
+      "station_id": "smoke-station-001"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T23:07:31.111146+00:00",
+    "cp_id": "SYSTEM",
+    "action": "StationDelete",
+    "payload": {
+      "station_id": "smoke-station-001"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T23:08:09.049800+00:00",
+    "cp_id": "SYSTEM",
+    "action": "StationUpdate",
+    "payload": {
+      "station_id": "smoke-station-001"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T23:08:09.091075+00:00",
+    "cp_id": "SYSTEM",
+    "action": "StationDelete",
+    "payload": {
+      "station_id": "smoke-station-001"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T23:10:34.755678+00:00",
+    "cp_id": "SYSTEM",
+    "action": "StationUpsert",
+    "payload": {
+      "station_id": "smoke-station-005",
+      "station": {
+        "id": "smoke-station-005",
+        "name": "Smoke Station 5",
+        "zone": "QA",
+        "location": "Lab",
+        "notes": "smoke test",
+        "created_at": "2026-05-25T23:10:34.755373+00:00",
+        "updated_at": "2026-05-25T23:10:34.755373+00:00"
+      }
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T23:11:20.644726+00:00",
+    "cp_id": "SYSTEM",
+    "action": "UserUpsert",
+    "payload": {
+      "email": "smoke-user@example.com",
+      "role": "operator"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T23:12:30.074796+00:00",
+    "cp_id": "SYSTEM",
+    "action": "StationUpdate",
+    "payload": {
+      "station_id": "smoke-station-005"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T23:12:30.117394+00:00",
+    "cp_id": "SYSTEM",
+    "action": "StationDelete",
+    "payload": {
+      "station_id": "smoke-station-005"
+    }
   }
 ]
