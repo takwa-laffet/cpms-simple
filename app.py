@@ -71,7 +71,8 @@ AUTH_SECRET_KEY = os.environ.get("AUTH_SECRET_KEY", "cityos-dev-secret")
 AUTH_SESSION_TTL_SECONDS = int(os.environ.get("AUTH_SESSION_TTL_SECONDS", "86400"))
 BILLING_TARIFF_PER_KWH = float(os.environ.get("CITYOS_TARIFF_PER_KWH", "0.35"))
 SUPERVISION_ROLES = {"admin", "institution"}
-FULL_MANAGEMENT_ROLES = {"admin", "institution"}
+FULL_MANAGEMENT_ROLES = {"admin"}
+COMMAND_ROLES = {"admin", "operator"}
 USER_MANAGEMENT_ROLES = {"admin"}
 
 
@@ -1623,7 +1624,7 @@ async def get_cp_meta(cp_id: str):
 
 @app.post("/api/cp/{cp_id}/meta")
 async def post_cp_meta(cp_id: str, request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, FULL_MANAGEMENT_ROLES)
     payload = await read_request_payload(request)
     updated = update_metadata_store(cp_id, payload)
     await COLLECTOR.record_action(cp_id, "MetadataUpdate", {"metadata": updated})
@@ -1632,7 +1633,7 @@ async def post_cp_meta(cp_id: str, request: Request):
 
 @app.post("/api/charge-points")
 async def create_charge_point(request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, FULL_MANAGEMENT_ROLES)
     payload = await read_request_payload(request)
     charge_point = upsert_charge_point_record(payload)
     await COLLECTOR.record_action(charge_point["cp_id"], "ChargePointUpsert", {"charge_point": charge_point})
@@ -1648,7 +1649,7 @@ async def list_stations(request: Request):
 
 @app.post('/api/stations')
 async def create_station(request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, FULL_MANAGEMENT_ROLES)
     payload = await read_request_payload(request)
     station = upsert_station(payload)
     await COLLECTOR.record_action('SYSTEM', 'StationUpsert', {'station_id': station['id'], 'station': station})
@@ -1657,7 +1658,7 @@ async def create_station(request: Request):
 
 @app.put('/api/stations/{station_id}')
 async def update_station(station_id: str, request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, FULL_MANAGEMENT_ROLES)
     payload = await read_request_payload(request)
     payload['id'] = station_id
     station = upsert_station(payload)
@@ -1685,7 +1686,7 @@ async def list_station_chargers(station_id: str, request: Request):
 
 @app.post('/api/chargers/{cp_id}/status')
 async def set_charger_status(cp_id: str, request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, COMMAND_ROLES)
     payload = await read_request_payload(request)
     status_value = str(payload.get('status') or payload.get('state') or '').strip()
     if not status_value:
@@ -1710,7 +1711,7 @@ async def set_charger_status(cp_id: str, request: Request):
 @app.post('/api/chargers/{cp_id}/assign')
 async def assign_charger(cp_id: str, request: Request):
     # allow operators and admins to assign
-    require_role(request, {'admin', 'operator'})
+    require_role(request, COMMAND_ROLES)
     payload = await read_request_payload(request)
     user_email = str(payload.get('user_email') or payload.get('email') or '').strip().lower()
     if not user_email:
@@ -1729,7 +1730,7 @@ async def assign_charger(cp_id: str, request: Request):
 
 @app.post('/api/chargers/{cp_id}/unassign')
 async def unassign_charger(cp_id: str, request: Request):
-    require_role(request, {'admin', 'operator'})
+    require_role(request, COMMAND_ROLES)
     existing = get_charge_point_record(cp_id) or {}
     existing.pop('assigned_user', None)
     updated = upsert_charge_point_record(existing)
@@ -1739,7 +1740,7 @@ async def unassign_charger(cp_id: str, request: Request):
 
 @app.post("/api/charge-points/{cp_id}/tariff")
 async def set_charge_point_tariff(cp_id: str, request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, FULL_MANAGEMENT_ROLES)
     payload = await read_request_payload(request)
     tariff_value = payload.get("tariff_per_kwh", payload.get("tariff"))
     if tariff_value is None or str(tariff_value).strip() == "":
@@ -1797,7 +1798,7 @@ async def create_user(request: Request):
 
 @app.post("/api/cp/{cp_id}/force_start")
 async def force_start(cp_id: str, request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, COMMAND_ROLES)
     payload = await read_request_payload(request)
     connector_id = int(payload.get("connector_id") or 1)
     meter_start = float(payload.get("meter_start") or 0)
@@ -1809,7 +1810,7 @@ async def force_start(cp_id: str, request: Request):
 
 @app.post("/api/cp/{cp_id}/force_stop")
 async def force_stop(cp_id: str, request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, COMMAND_ROLES)
     payload = await read_request_payload(request)
     transaction_id = normalize_transaction_id(payload.get("transaction_id"))
     if transaction_id is None:
@@ -1824,7 +1825,7 @@ async def force_stop(cp_id: str, request: Request):
 
 @app.post("/api/cp/{cp_id}/remote_start")
 async def remote_start(cp_id: str, request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, COMMAND_ROLES)
     payload = await read_request_payload(request)
     connector_id = int(payload.get("connector_id") or 1)
     id_tag = str(payload.get("id_tag") or f"REMOTE_{cp_id}")
@@ -1836,7 +1837,7 @@ async def remote_start(cp_id: str, request: Request):
 
 @app.post("/api/cp/{cp_id}/remote_stop")
 async def remote_stop(cp_id: str, request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, COMMAND_ROLES)
     payload = await read_request_payload(request)
     transaction_id = normalize_transaction_id(payload.get("transaction_id"))
     if transaction_id is None:
@@ -1851,7 +1852,7 @@ async def remote_stop(cp_id: str, request: Request):
 
 @app.post("/api/cp/{cp_id}/remote_reboot")
 async def remote_reboot(cp_id: str, request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, COMMAND_ROLES)
     payload = await read_request_payload(request)
     reset_type = str(payload.get("reset_type") or "Soft")
     metadata = update_metadata_store(cp_id, {"rebootLogs": list(read_meta().get(cp_id, {}).get("rebootLogs", [])) + [{"timestamp": utc_now_iso(), "reset_type": reset_type}]})
@@ -1862,7 +1863,7 @@ async def remote_reboot(cp_id: str, request: Request):
 
 @app.post("/api/cp/{cp_id}/unlock_connector")
 async def unlock_connector(cp_id: str, request: Request):
-    require_role(request, SUPERVISION_ROLES)
+    require_role(request, COMMAND_ROLES)
     payload = await read_request_payload(request)
     connector_id = int(payload.get("connector_id") or 1)
     await COLLECTOR.record_action(cp_id, "UnlockConnector", {"connector_id": connector_id})

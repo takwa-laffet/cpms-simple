@@ -5,7 +5,7 @@
     "serialNumber": "CP_ROUTE_001_SN_001",
     "cp_id": "CP_ROUTE_001",
     "created_at": "2026-05-25T13:38:50.515318+00:00",
-    "updated_at": "2026-05-25T23:20:56.541799+00:00",
+    "updated_at": "2026-05-25T23:36:09.793176+00:00",
     "rebootLogs": [
       {
         "timestamp": "2026-05-25T13:38:50.552837+00:00",
@@ -41,7 +41,7 @@
     "iccid": "8930000000000000000",
     "imsi": "208000000000000",
     "commissioningDate": "2026-01-15",
-    "uptime": "0 days 00:23:44",
+    "uptime": "0 days 00:38:58",
     "assigned_user": "operator@rback.local"
   },
   "SYSTEM": {

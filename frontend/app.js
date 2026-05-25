@@ -37,6 +37,7 @@ const els = {
    roleBadge: document.getElementById('role-badge'),
    roleDescription: document.getElementById('role-description'),
    administrationPanel: document.getElementById('charge-point-card')?.closest('.card.full-span') || document.querySelector('#charge-point-card')?.parentElement,
+  remoteCommandsCard: document.getElementById('remote-commands-card'),
    billingPanel: document.getElementById('billing-card'),
    commandGrid: document.getElementById('command-grid'),
    registeredCpList: document.getElementById('registered-cp-list'),
@@ -45,6 +46,7 @@ const els = {
    chargePointForm: document.getElementById('charge-point-form'),
   stationForm: document.getElementById('station-form'),
   stationList: document.getElementById('station-list'),
+  chargerActionsCard: document.getElementById('charger-actions-card'),
   chargerStatusForm: document.getElementById('charger-status-form'),
   chargerAssignForm: document.getElementById('charger-assign-form'),
   chargerUnassignBtn: document.getElementById('charger-unassign-btn'),
@@ -95,7 +97,7 @@ function formatMoney(value, currency = 'dt') {
 }
 
 function isManagementRole(role) {
-  return ['admin', 'institution'].includes(String(role || '').toLowerCase());
+  return String(role || '').toLowerCase() === 'admin';
 }
 
 function getRoleProfile(role) {
@@ -117,12 +119,12 @@ function getRoleProfile(role) {
      return {
        role: 'institution',
        label: 'Supervision',
-       description: 'Institution access: monitoring, charge-point data, billing, administration, and remote commands.',
-       canManageChargePoints: true,
-       canEditTariff: true,
-       canManageUsers: true,
+       description: 'Institution access: monitoring and billing only.',
+       canManageChargePoints: false,
+       canEditTariff: false,
+       canManageUsers: false,
        canSeeBilling: true,
-       canRemoteControl: true,
+       canRemoteControl: false,
      };
    }
 
@@ -217,6 +219,17 @@ function setCurrentUser(user) {
 
   if (els.administrationPanel) {
     els.administrationPanel.hidden = !profile.canManageChargePoints && !profile.canManageUsers;
+    els.administrationPanel.style.display = els.administrationPanel.hidden ? 'none' : '';
+  }
+
+  if (els.chargerActionsCard) {
+    els.chargerActionsCard.hidden = !profile.canRemoteControl;
+    els.chargerActionsCard.style.display = els.chargerActionsCard.hidden ? 'none' : '';
+  }
+
+  if (els.remoteCommandsCard) {
+    els.remoteCommandsCard.hidden = !profile.canRemoteControl;
+    els.remoteCommandsCard.style.display = els.remoteCommandsCard.hidden ? 'none' : '';
   }
 
   if (els.billingPanel) {
@@ -238,6 +251,7 @@ function setCurrentUser(user) {
 
   if (els.commandGrid) {
     els.commandGrid.hidden = !profile.canRemoteControl;
+    els.commandGrid.style.display = els.commandGrid.hidden ? 'none' : '';
   }
 }
 

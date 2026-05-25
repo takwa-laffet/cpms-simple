@@ -1,18 +1,18 @@
 {
-  "generated_at": "2026-05-25T23:21:04.045330+00:00",
+  "generated_at": "2026-05-25T23:36:09.793491+00:00",
   "server_started_at": "2026-05-25T22:56:23.023675+00:00",
   "metrics": {
     "total_connections": 0,
     "active_connections": 0,
-    "total_messages": 155
+    "total_messages": 248
   },
   "message_count_by_action": {
     "SimulationStart": 1,
-    "MetadataUpdate": 126,
+    "MetadataUpdate": 217,
     "StationUpdate": 3,
     "StationDelete": 3,
     "UnassignUser": 2,
-    "ForceStart": 2,
+    "ForceStart": 4,
     "ForceStop": 2,
     "RemoteStartTransaction": 2,
     "RemoteStopTransaction": 2,
@@ -27,22 +27,22 @@
   },
   "message_count_by_cp": {
     "SYSTEM": 10,
-    "CP_ROUTE_001": 145
+    "CP_ROUTE_001": 238
   },
   "last_seen": {
     "SYSTEM": "2026-05-25T23:12:30.117394+00:00",
-    "CP_ROUTE_001": "2026-05-25T23:20:56.530691+00:00"
+    "CP_ROUTE_001": "2026-05-25T23:36:09.776063+00:00"
   },
   "status_by_cp": {
     "CP_ROUTE_001": {
-      "timestamp": "2026-05-25T23:20:59.993684+00:00",
-      "status": "Charging",
+      "timestamp": "2026-05-25T23:36:07.202409+00:00",
+      "status": "Available",
       "error_code": "NoError"
     }
   },
   "last_meter_values_by_cp": {
     "CP_ROUTE_001": {
-      "timestamp": "2026-05-25T23:21:04.045312+00:00",
+      "timestamp": "2026-05-25T23:36:05.142351+00:00",
       "energy_wh": 3000,
       "last_meter_value": 3000
     }
@@ -64,11 +64,5 @@
       "uptime": "0 days 00:00:00"
     }
   },
-  "open_transactions_by_cp": {
-    "CP_ROUTE_001": {
-      "transaction_id": 107,
-      "opened_at": "2026-05-25T23:20:59.998708+00:00",
-      "id_tag": "SIM_20260525235711"
-    }
-  }
+  "open_transactions_by_cp": {}
 }
