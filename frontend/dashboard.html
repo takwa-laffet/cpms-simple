@@ -112,6 +112,37 @@
               <dl id="live-state" class="kv-list"></dl>
             </div>
 
+            <div class="card">
+              <div class="panel-head slim">
+                <h3>Charger Actions</h3>
+                <span class="note">Update charger status and assign/unassign users</span>
+              </div>
+              <div class="card-body">
+                <form id="charger-status-form" class="admin-form">
+                  <label>Status
+                    <select name="status">
+                      <option value="available">available</option>
+                      <option value="charging">charging</option>
+                      <option value="faulted">faulted</option>
+                      <option value="maintenance">maintenance</option>
+                      <option value="offline">offline</option>
+                    </select>
+                  </label>
+                  <button class="btn btn-primary" type="submit">Set Status</button>
+                </form>
+
+                <form id="charger-assign-form" class="admin-form">
+                  <label>Assign user (email)
+                    <input name="user_email" type="email" placeholder="user@example.com" />
+                  </label>
+                  <div class="form-actions">
+                    <button class="btn btn-primary" type="submit">Assign</button>
+                    <button id="charger-unassign-btn" class="btn btn-warning" type="button">Unassign</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
             <div class="card full-span">
               <div class="panel-head slim">
                 <h3>Remote Commands</h3>
@@ -190,6 +221,24 @@
                   </form>
 
                   <div id="registered-cp-list" class="entity-list"></div>
+                </section>
+
+                <section class="admin-card" id="station-card" data-role="management">
+                  <div class="panel-head slim">
+                    <h4>Stations</h4>
+                    <span class="note">Create and manage stations (zones, location)</span>
+                  </div>
+
+                  <form id="station-form" class="admin-form">
+                    <label>Station ID <input name="id" type="text" placeholder="STATION_001" required /></label>
+                    <label>Name <input name="name" type="text" placeholder="Main Street Station" /></label>
+                    <label>Zone <input name="zone" type="text" placeholder="Downtown" /></label>
+                    <label>Location <input name="location" type="text" placeholder="Lat,Lng or address" /></label>
+                    <label>Notes <input name="notes" type="text" placeholder="Optional" /></label>
+                    <button class="btn btn-primary" type="submit">Save Station</button>
+                  </form>
+
+                  <div id="station-list" class="entity-list"></div>
                 </section>
 
                 <section class="admin-card" id="user-card" data-role="admin">

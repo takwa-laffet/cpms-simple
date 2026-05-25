@@ -60,6 +60,7 @@ BORNE_LOGS_DIR.mkdir(exist_ok=True)
 META_FILE = DATA_DIR / "borne_meta.json"
 USERS_FILE = DATA_DIR / "users.json"
 CHARGE_POINTS_FILE = DATA_DIR / "charge_points.json"
+STATIONS_FILE = DATA_DIR / "stations.json"
 FRONTEND_DIR = Path("frontend")
 FRONTEND_INDEX_FILE = FRONTEND_DIR / "index.html"
 FRONTEND_DASHBOARD_FILE = FRONTEND_DIR / "dashboard.html"
@@ -225,6 +226,54 @@ def write_users(users: list[dict]) -> None:
     USERS_FILE.write_text(json.dumps(users, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
+def read_stations() -> list[dict]:
+    data = read_json_file(STATIONS_FILE, [])
+    return data if isinstance(data, list) else []
+
+
+def write_stations(stations: list[dict]) -> None:
+    STATIONS_FILE.write_text(json.dumps(stations, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def get_station_by_id(station_id: str) -> dict | None:
+    sid = str(station_id).strip()
+    for s in read_stations():
+        if str(s.get("id") or s.get("station_id") or "").strip() == sid:
+            return s
+    return None
+
+
+def upsert_station(record: dict) -> dict:
+    stations = read_stations()
+    station_id = str(record.get("id") or record.get("station_id") or record.get("name") or "").strip()
+    if not station_id:
+        raise ValueError("station id is required")
+
+    now = utc_now_iso()
+    normalized = {
+        "id": station_id,
+        "name": record.get("name") or station_id,
+        "zone": record.get("zone"),
+        "location": record.get("location"),
+        "notes": record.get("notes"),
+        "created_at": record.get("created_at") or now,
+        "updated_at": now,
+    }
+
+    updated = False
+    for i, existing in enumerate(stations):
+        if str(existing.get("id") or "").strip() == station_id:
+            stations[i] = {**existing, **normalized, "created_at": existing.get("created_at") or normalized["created_at"]}
+            updated = True
+            break
+
+    if not updated:
+        stations.append(normalized)
+
+    write_stations(stations)
+    return normalized
+
+
 def public_user(user: dict) -> dict:
     return {
         "id": user.get("id"),
@@ -311,6 +360,8 @@ def upsert_charge_point_record(record: dict) -> dict:
         "cp_id": cp_id,
         "label": record.get("label") or cp_id,
         "site": record.get("site"),
+        "station_id": record.get("station_id"),
+        "status": record.get("status") or record.get("state") or "offline",
         "connector_count": int(record.get("connector_count") or 1),
         "tariff_per_kwh": float(record.get("tariff_per_kwh") or BILLING_TARIFF_PER_KWH),
         "notes": record.get("notes"),
@@ -1572,6 +1623,104 @@ async def create_charge_point(request: Request):
     return JSONResponse({"status": "ok", "charge_point": charge_point})
 
 
+@app.get('/api/stations')
+async def list_stations(request: Request):
+    require_authenticated_user(request)
+    stations = read_stations()
+    return JSONResponse({"stations": stations})
+
+
+@app.post('/api/stations')
+async def create_station(request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    station = upsert_station(payload)
+    await COLLECTOR.record_action('SYSTEM', 'StationUpsert', {'station_id': station['id'], 'station': station})
+    return JSONResponse({'status': 'ok', 'station': station})
+
+
+@app.put('/api/stations/{station_id}')
+async def update_station(station_id: str, request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    payload['id'] = station_id
+    station = upsert_station(payload)
+    await COLLECTOR.record_action('SYSTEM', 'StationUpdate', {'station_id': station_id})
+    return JSONResponse({'status': 'ok', 'station': station})
+
+
+@app.delete('/api/stations/{station_id}')
+async def delete_station(station_id: str, request: Request):
+    require_role(request, FULL_MANAGEMENT_ROLES)
+    stations = read_stations()
+    new_list = [s for s in stations if str(s.get('id')) != station_id]
+    write_stations(new_list)
+    await COLLECTOR.record_action('SYSTEM', 'StationDelete', {'station_id': station_id})
+    return JSONResponse({'status': 'ok', 'deleted': station_id})
+
+
+@app.get('/api/stations/{station_id}/chargers')
+async def list_station_chargers(station_id: str, request: Request):
+    require_authenticated_user(request)
+    registry = read_charge_point_registry()
+    chargers = [cp for cp in registry if str(cp.get('station_id') or '') == station_id]
+    return JSONResponse({'station_id': station_id, 'chargers': chargers})
+
+
+@app.post('/api/chargers/{cp_id}/status')
+async def set_charger_status(cp_id: str, request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    status_value = str(payload.get('status') or payload.get('state') or '').strip()
+    if not status_value:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='status is required')
+    # normalize and validate status
+    normalized = status_value.strip().lower()
+    allowed = {'available', 'charging', 'faulted', 'maintenance', 'offline'}
+    if normalized not in allowed:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'status must be one of: {sorted(list(allowed))}')
+
+    # fetch existing record and update
+    existing = get_charge_point_record(cp_id) or {}
+    existing['status'] = normalized
+    existing['station_id'] = payload.get('station_id') or existing.get('station_id')
+    updated = upsert_charge_point_record(existing)
+    await COLLECTOR.update_status(cp_id, {'status': normalized})
+    await COLLECTOR.record_action(cp_id, 'StatusSet', {'status': normalized})
+    return JSONResponse({'status': 'ok', 'charge_point': updated})
+
+
+
+@app.post('/api/chargers/{cp_id}/assign')
+async def assign_charger(cp_id: str, request: Request):
+    # allow operators and admins to assign
+    require_role(request, {'admin', 'operator'})
+    payload = await read_request_payload(request)
+    user_email = str(payload.get('user_email') or payload.get('email') or '').strip().lower()
+    if not user_email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='user_email is required')
+
+    user = get_user_by_email(user_email)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
+
+    existing = get_charge_point_record(cp_id) or {}
+    existing['assigned_user'] = user_email
+    updated = upsert_charge_point_record(existing)
+    await COLLECTOR.record_action(cp_id, 'AssignUser', {'user_email': user_email})
+    return JSONResponse({'status': 'ok', 'charge_point': updated})
+
+
+@app.post('/api/chargers/{cp_id}/unassign')
+async def unassign_charger(cp_id: str, request: Request):
+    require_role(request, {'admin', 'operator'})
+    existing = get_charge_point_record(cp_id) or {}
+    existing.pop('assigned_user', None)
+    updated = upsert_charge_point_record(existing)
+    await COLLECTOR.record_action(cp_id, 'UnassignUser', {})
+    return JSONResponse({'status': 'ok', 'charge_point': updated})
+
+
 @app.post("/api/charge-points/{cp_id}/tariff")
 async def set_charge_point_tariff(cp_id: str, request: Request):
     require_role(request, SUPERVISION_ROLES)
@@ -1708,8 +1857,122 @@ async def unlock_connector(cp_id: str, request: Request):
 @app.get("/api/cp")
 async def cp_data(request: Request):
     """Get CPMS data for dashboard"""
+    # support optional filtering by query params: user_email, station_id, cp_id
     payload = build_cp_payload()
+    q = dict(request.query_params)
+    user_email = q.get('user_email') or q.get('email')
+    station_id = q.get('station_id')
+    cp_id = q.get('cp_id')
+
+    # filter by cp_id exact
+    if cp_id:
+        # restrict charge_points and sessions to this cp_id
+        payload['charge_points'] = [cp for cp in payload.get('charge_points', []) if cp.get('cp_id') == cp_id]
+        payload['sessions'] = {k: v for k, v in payload.get('sessions', {}).items() if k == cp_id}
+        return JSONResponse(payload)
+
+    # determine cp_ids from station filter
+    cp_ids_by_station = None
+    if station_id:
+        registry = {str(rec.get('cp_id')): rec for rec in read_charge_point_registry()}
+        cp_ids_by_station = {cp_id for cp_id, rec in registry.items() if str(rec.get('station_id') or '') == str(station_id)}
+
+    # filter sessions by user_email or station
+    if user_email or cp_ids_by_station is not None:
+        sessions = payload.get('sessions', {})
+        new_sessions = {}
+        for cpkey, sess_list in sessions.items():
+            # station filter: skip sessions not in station
+            if cp_ids_by_station is not None and cpkey not in cp_ids_by_station:
+                continue
+
+            filtered = []
+            for s in sess_list:
+                keep = True
+                if user_email:
+                    ue = str(user_email).strip().lower()
+                    su = str(s.get('user') or '').strip().lower()
+                    if ue not in {su, str(s.get('id_tag') or '').strip().lower()}:
+                        keep = False
+                if keep:
+                    filtered.append(s)
+
+            if filtered:
+                new_sessions[cpkey] = filtered
+
+        payload['sessions'] = new_sessions
+
+        # also filter charge_points list to those with sessions or assigned user
+        cps = payload.get('charge_points', [])
+        if user_email:
+            ue = str(user_email).strip().lower()
+            cps = [c for c in cps if (str(c.get('assigned_user') or '').strip().lower() == ue) or (c.get('cp_id') in payload['sessions'])]
+        elif cp_ids_by_station is not None:
+            cps = [c for c in cps if c.get('cp_id') in cp_ids_by_station]
+
+        payload['charge_points'] = cps
+
     return JSONResponse(payload)
+
+
+@app.get('/api/institution/metrics')
+async def institution_metrics(request: Request):
+    """Aggregate simple institution-level metrics by zone."""
+    require_role(request, {'admin', 'institution'})
+
+    payload = build_cp_payload()
+    stations = read_stations()
+    registry = {str(rec.get('cp_id')): rec for rec in read_charge_point_registry()}
+
+    # Map station id -> zone
+    station_zone = {s.get('id'): s.get('zone') or 'unknown' for s in stations}
+
+    zones: dict[str, dict] = {}
+    # initialize zones from stations
+    for s in stations:
+        z = s.get('zone') or 'unknown'
+        zones.setdefault(z, {'stations': 0, 'chargers': 0, 'sessions': 0, 'energy_kwh': 0.0})
+        zones[z]['stations'] += 1
+
+    # count chargers per zone
+    for cp in payload.get('registered_charge_points', []) + payload.get('charge_points', []):
+        cp_id = str(cp.get('cp_id'))
+        station_id = str(cp.get('station_id') or '')
+        zone = station_zone.get(station_id) or 'unknown'
+        zones.setdefault(zone, {'stations': 0, 'chargers': 0, 'sessions': 0, 'energy_kwh': 0.0})
+        zones[zone]['chargers'] += 1
+
+    # aggregate sessions energy per cp and assign to zone
+    sessions = payload.get('sessions', {})
+    for cp_id, sess_list in sessions.items():
+        cp_rec = registry.get(cp_id, {})
+        station_id = str(cp_rec.get('station_id') or '')
+        zone = station_zone.get(station_id) or 'unknown'
+        for s in sess_list:
+            energy = s.get('energy_kwh')
+            if energy is None:
+                continue
+            zones.setdefault(zone, {'stations': 0, 'chargers': 0, 'sessions': 0, 'energy_kwh': 0.0})
+            zones[zone]['sessions'] += 1
+            try:
+                zones[zone]['energy_kwh'] += float(energy)
+            except Exception:
+                pass
+
+    # compute derived metrics
+    for z, metrics in zones.items():
+        sessions_n = metrics.get('sessions') or 0
+        metrics['avg_kwh_per_session'] = round((metrics['energy_kwh'] / sessions_n) if sessions_n else 0.0, 3)
+
+    # totals
+    totals = {'stations': 0, 'chargers': 0, 'sessions': 0, 'energy_kwh': 0.0}
+    for m in zones.values():
+        totals['stations'] += int(m.get('stations') or 0)
+        totals['chargers'] += int(m.get('chargers') or 0)
+        totals['sessions'] += int(m.get('sessions') or 0)
+        totals['energy_kwh'] += float(m.get('energy_kwh') or 0.0)
+
+    return JSONResponse({'zones': zones, 'totals': totals})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", os.environ.get("APP_PORT", "5000")))

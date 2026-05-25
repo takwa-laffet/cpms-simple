@@ -43,6 +43,11 @@ const els = {
    userList: document.getElementById('user-list'),
    billingSummary: document.getElementById('billing-summary'),
    chargePointForm: document.getElementById('charge-point-form'),
+  stationForm: document.getElementById('station-form'),
+  stationList: document.getElementById('station-list'),
+  chargerStatusForm: document.getElementById('charger-status-form'),
+  chargerAssignForm: document.getElementById('charger-assign-form'),
+  chargerUnassignBtn: document.getElementById('charger-unassign-btn'),
    userForm: document.getElementById('user-form'),
    adminCards: document.querySelectorAll('.admin-card'),
 };
@@ -488,6 +493,7 @@ function renderDetail(data, selectedCpId) {
   const meter = data?.snapshot?.last_meter_values_by_cp?.[selectedCpId] || {};
   const openTx = data?.snapshot?.open_transactions_by_cp?.[selectedCpId] || {};
   const lastSeen = data?.snapshot?.last_seen?.[selectedCpId] || data?.last_seen?.[selectedCpId] || null;
+  const assignedUser = data?.registered_charge_points?.find(c => c.cp_id === selectedCpId)?.assigned_user || data?.charge_points?.find(c => c.cp_id === selectedCpId)?.assigned_user || null;
 
   els.selectedCpLabel.textContent = selectedCpId || '-';
   els.detailTitle.textContent = selectedCpId ? (cpView.label || `Charge Point ${selectedCpId}`) : 'Choose a charge point';
@@ -519,6 +525,7 @@ function renderDetail(data, selectedCpId) {
     ['Last Seen', lastSeen],
     ['Active Transaction', openTx.transaction_id],
     ['Last Meter Value', meter.meter_value],
+    ['Assigned User', assignedUser],
     ['Boot Notification', info.boot_notification?.chargePointVendor || info.boot_notification?.charge_point_vendor],
   ]);
 }
@@ -624,6 +631,9 @@ function renderAdministration(data) {
     els.userList.innerHTML = '<article class="timeline-item"><p class="timeline-body">User management is not available for this role.</p></article>';
   }
 
+  // render stations if available
+  renderStations(data);
+
   renderKeyValues(els.billingSummary, [
     ['Tariff per kWh', billing.tariff_per_kwh !== undefined ? `${Number(billing.tariff_per_kwh).toFixed(2)} dt` : '—'],
     ['Currency', billing.currency || 'dt'],
@@ -637,6 +647,35 @@ function renderAdministration(data) {
     if (billingTitle) billingTitle.textContent = 'Supervision';
     if (billingNote) billingNote.textContent = 'Read-only billing summary with tariff supervision.';
   }
+}
+
+function renderStations(data) {
+  const stations = data?.stations || [];
+  const registry = data?.registered_charge_points || [];
+  if (!els.stationList) return;
+
+  if (!stations.length) {
+    els.stationList.innerHTML = '<article class="timeline-item"><p class="timeline-body">No stations defined yet.</p></article>';
+    return;
+  }
+
+  els.stationList.innerHTML = '';
+  stations.forEach((st) => {
+    const cpCount = registry.filter(r => String(r.station_id || '') === String(st.id)).length;
+    const el = document.createElement('article');
+    el.className = 'entity-item';
+    el.innerHTML = `
+      <div class="entity-item-head">
+        <strong>${st.name || st.id}</strong>
+        <span class="badge">${st.zone || 'unknown'}</span>
+      </div>
+      <p class="entity-item-body">${st.location || ''} · ${cpCount} charger${cpCount===1?'' : 's'}</p>
+      <div class="entity-actions">
+        <button class="btn btn-secondary btn-sm station-edit" data-id="${st.id}">Edit</button>
+      </div>
+    `;
+    els.stationList.appendChild(el);
+  });
 }
 
 function renderEvents(data, selectedCpId) {
@@ -768,6 +807,100 @@ function wireAdministrationForms() {
       } catch (error) {
         showToast(error.message, 'error');
       }
+    });
+  }
+
+  if (els.stationForm) {
+    els.stationForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const formData = new FormData(els.stationForm);
+      const body = {
+        id: String(formData.get('id') || '').trim(),
+        name: String(formData.get('name') || '').trim(),
+        zone: String(formData.get('zone') || '').trim(),
+        location: String(formData.get('location') || '').trim(),
+        notes: String(formData.get('notes') || '').trim(),
+      };
+
+      try {
+        const response = await fetch('/api/stations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          credentials: 'include'
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.detail || 'Unable to save station');
+        els.stationForm.reset();
+        showToast(`Station ${payload.station.id} saved`, 'success');
+        await loadData();
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    });
+  }
+
+  // wire charger status and assignment forms
+  if (els.chargerStatusForm) {
+    els.chargerStatusForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const selectedCpId = getSelectedChargePointId(state.data);
+      if (!selectedCpId) { showToast('No charge point selected', 'error'); return; }
+      const formData = new FormData(els.chargerStatusForm);
+      const status = String(formData.get('status') || '').trim();
+      try {
+        const response = await fetch(`/api/chargers/${encodeURIComponent(selectedCpId)}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ status })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.detail || payload.error || 'Failed to set status');
+        showToast(`Status set to ${status} for ${selectedCpId}`, 'success');
+        await loadData();
+      } catch (err) { showToast(err.message, 'error'); }
+    });
+  }
+
+  if (els.chargerAssignForm) {
+    els.chargerAssignForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const selectedCpId = getSelectedChargePointId(state.data);
+      if (!selectedCpId) { showToast('No charge point selected', 'error'); return; }
+      const formData = new FormData(els.chargerAssignForm);
+      const user_email = String(formData.get('user_email') || '').trim();
+      if (!user_email) { showToast('Please provide user email', 'error'); return; }
+      try {
+        const response = await fetch(`/api/chargers/${encodeURIComponent(selectedCpId)}/assign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ user_email })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.detail || payload.error || 'Failed to assign user');
+        showToast(`Assigned ${user_email} to ${selectedCpId}`, 'success');
+        els.chargerAssignForm.reset();
+        await loadData();
+      } catch (err) { showToast(err.message, 'error'); }
+    });
+  }
+
+  if (els.chargerUnassignBtn) {
+    els.chargerUnassignBtn.addEventListener('click', async () => {
+      const selectedCpId = getSelectedChargePointId(state.data);
+      if (!selectedCpId) { showToast('No charge point selected', 'error'); return; }
+      try {
+        const response = await fetch(`/api/chargers/${encodeURIComponent(selectedCpId)}/unassign`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.detail || payload.error || 'Failed to unassign');
+        showToast(`Unassigned user from ${selectedCpId}`, 'success');
+        await loadData();
+      } catch (err) { showToast(err.message, 'error'); }
     });
   }
 
