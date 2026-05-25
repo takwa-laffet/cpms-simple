@@ -59,6 +59,8 @@ async def _send_ocpp_message(cp_id: str, action: str, payload: dict, collector=N
     }
     _append_jsonl(EVENTS_FILE, event)
     _append_borne_json(cp_id, event)
+    if cp_id in simulation_state:
+        simulation_state[cp_id].setdefault("messages", []).append(event)
     # Send to backend collector if available
     if collector is not None:
         await collector.record_action(cp_id, action, payload)
@@ -235,7 +237,7 @@ async def start_auto_simulator(cp_id: str, ws_url: str = "ws://localhost:5000", 
     if cp_id in simulation_state and simulation_state[cp_id].get("running"):
         return False
     sim = AutoChargePointSimulator(cp_id, ws_url, collector)
-    simulation_state[cp_id] = {"simulator": sim, "running": True, "start_time": utc_now_iso(), "ws_url": ws_url}
+    simulation_state[cp_id] = {"simulator": sim, "running": True, "start_time": utc_now_iso(), "ws_url": ws_url, "messages": []}
     asyncio.create_task(sim.run())
     return True
 

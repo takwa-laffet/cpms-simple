@@ -1284,7 +1284,7 @@ async def get_simulation_messages(cp_id: str):
     if cp_id in sim_state:
         return JSONResponse({
             "cp_id": cp_id,
-            "messages": [],
+            "messages": sim_state[cp_id].get("messages", []),
             "active": sim_state[cp_id].get("running", False),
             "start_time": sim_state[cp_id].get("start_time", ""),
             "ws_url": sim_state[cp_id].get("ws_url", "")
@@ -1337,13 +1337,15 @@ async def send_ocpp_simulation_message(request: Request):
 @app.get("/api/ocpp/simulate")
 async def list_active_simulations():
     """List all active OCPP simulations"""
+    from auto_simulator import simulation_state as sim_state
+
     active_sims = {}
-    for cp_id, state in simulation_state.items():
-        if state["active"]:
+    for cp_id, state in sim_state.items():
+        if state.get("running", False):
             active_sims[cp_id] = {
                 "ws_url": state["ws_url"],
                 "start_time": state["start_time"],
-                "message_count": len(state["messages"])
+                "message_count": len(state.get("messages", []))
             }
     
     return JSONResponse({
@@ -1462,15 +1464,244 @@ def serve_dashboard(request: Request):
     )
 
 
-@app.get("/ocpp-simulator")
-async def ocpp_simulator_frontend():
-    """Serve the OCPP simulator frontend"""
-    try:
-        with open("templates/index.html", "r", encoding="utf-8") as f:
-            html_content = f.read()
-        return HTMLResponse(content=html_content)
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Simulator frontend not found")
+async def read_request_payload(request: Request) -> dict:
+    payload = dict(request.query_params)
+    body = await request.body()
+    if not body:
+        return payload
+
+    text_body = body.decode("utf-8", errors="ignore").strip()
+    if not text_body:
+        return payload
+
+    content_type = (request.headers.get("content-type") or "").lower()
+    if "application/json" in content_type:
+        try:
+            json_body = json.loads(text_body)
+        except json.JSONDecodeError:
+            json_body = None
+        if isinstance(json_body, dict):
+            payload.update(json_body)
+        return payload
+
+    form_data = parse_qs(text_body, keep_blank_values=True)
+    payload.update({key: values[0] if len(values) == 1 else values for key, values in form_data.items()})
+    return payload
+
+
+def normalize_metadata_payload(payload: dict) -> dict:
+    normalized = dict(payload or {})
+    alias_map = {
+        "manufacturer": ["manufacturer", "vendor", "charge_point_vendor", "chargePointVendor"],
+        "model": ["model", "charge_point_model", "chargePointModel"],
+        "serialNumber": ["serialNumber", "serial_number", "charge_point_serial_number", "chargePointSerialNumber"],
+        "firmwareVersion": ["firmwareVersion", "firmware_version", "firmware"],
+        "ipAddress": ["ipAddress", "ip_address"],
+        "iccid": ["iccid", "ICCID"],
+        "imsi": ["imsi", "IMSI"],
+        "commissioningDate": ["commissioningDate", "commissioning_date"],
+        "uptime": ["uptime"],
+        "rebootLogs": ["rebootLogs", "reboot_logs"],
+    }
+
+    for target, candidates in alias_map.items():
+        if normalized.get(target) is not None:
+            continue
+        for candidate in candidates:
+            if normalized.get(candidate) is not None:
+                normalized[target] = normalized.get(candidate)
+                break
+
+    return normalized
+
+
+def update_metadata_store(cp_id: str, payload: dict) -> dict:
+    metadata = read_meta()
+    existing = metadata.get(cp_id, {}) if isinstance(metadata, dict) else {}
+    normalized = normalize_metadata_payload(payload)
+    updated = {**existing, **normalized, "cp_id": cp_id}
+    if not updated.get("created_at"):
+        updated["created_at"] = existing.get("created_at") or utc_now_iso()
+    updated["updated_at"] = utc_now_iso()
+    metadata[cp_id] = updated
+    write_meta(metadata)
+    return updated
+
+
+async def command_response(cp_id: str, action: str, payload: dict | None = None, *, status_after: str | None = None, transaction_id: int | None = None) -> JSONResponse:
+    details = payload or {}
+    await COLLECTOR.record_action(cp_id, action, details)
+    if status_after:
+        await COLLECTOR.update_status(cp_id, {"status": status_after})
+
+    response_payload: dict = {
+        "result": "sent",
+        "response_status": "Accepted",
+        "cp_id": cp_id,
+        "action": action,
+    }
+    if transaction_id is not None:
+        response_payload["transaction_id"] = transaction_id
+    response_payload.update(details)
+    return JSONResponse(response_payload)
+@app.get("/api/cp/{cp_id}/meta")
+async def get_cp_meta(cp_id: str):
+    metadata = read_meta()
+    record = metadata.get(cp_id)
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No metadata found for CP ID: {cp_id}")
+
+    return JSONResponse({"cp_id": cp_id, "metadata": record})
+
+
+@app.post("/api/cp/{cp_id}/meta")
+async def post_cp_meta(cp_id: str, request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    updated = update_metadata_store(cp_id, payload)
+    await COLLECTOR.record_action(cp_id, "MetadataUpdate", {"metadata": updated})
+    return JSONResponse({"status": "ok", "cp_id": cp_id, "metadata": updated})
+
+
+@app.post("/api/charge-points")
+async def create_charge_point(request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    charge_point = upsert_charge_point_record(payload)
+    await COLLECTOR.record_action(charge_point["cp_id"], "ChargePointUpsert", {"charge_point": charge_point})
+    return JSONResponse({"status": "ok", "charge_point": charge_point})
+
+
+@app.post("/api/charge-points/{cp_id}/tariff")
+async def set_charge_point_tariff(cp_id: str, request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    tariff_value = payload.get("tariff_per_kwh", payload.get("tariff"))
+    if tariff_value is None or str(tariff_value).strip() == "":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="tariff_per_kwh is required")
+
+    updated = update_charge_point_tariff(cp_id, float(tariff_value))
+    await COLLECTOR.record_action(cp_id, "TariffUpdate", {"tariff_per_kwh": updated["tariff_per_kwh"]})
+    return JSONResponse({"status": "ok", "charge_point": updated})
+
+
+@app.post("/api/users")
+async def create_user(request: Request):
+    require_role(request, FULL_MANAGEMENT_ROLES)
+    payload = await read_request_payload(request)
+    email = str(payload.get("email") or "").strip().lower()
+    password = str(payload.get("password") or "")
+    if not email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="email is required")
+
+    role = str(payload.get("role") or "operator").strip().lower()
+    if role not in {"admin", "institution", "operator"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role")
+
+    users = read_users()
+    existing_user = None
+    for user in users:
+        if str(user.get("email", "")).strip().lower() == email:
+            existing_user = user
+            break
+
+    if existing_user is None and not password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="password is required for new users")
+
+    user_record = {
+        "id": (existing_user or {}).get("id") or f"user-{email.replace('@', '-at-').replace('.', '-')}",
+        "email": email,
+        "password_hash": (existing_user or {}).get("password_hash") or hash_password(password),
+        "role": role,
+        "name": str(payload.get("name") or payload.get("full_name") or email).strip(),
+        "active": bool(payload.get("active", True)),
+        "created_at": (existing_user or {}).get("created_at") or utc_now_iso(),
+    }
+    if password:
+        user_record["password_hash"] = hash_password(password)
+
+    if existing_user is None:
+        users.append(user_record)
+    else:
+        existing_user.update(user_record)
+
+    write_users(users)
+    await COLLECTOR.record_action("SYSTEM", "UserUpsert", {"email": email, "role": role})
+    return JSONResponse({"status": "ok", "user": public_user(user_record)})
+
+
+@app.post("/api/cp/{cp_id}/force_start")
+async def force_start(cp_id: str, request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    connector_id = int(payload.get("connector_id") or 1)
+    meter_start = float(payload.get("meter_start") or 0)
+    transaction_id = await COLLECTOR.start_transaction(cp_id, {"connector_id": connector_id, "meter_start": meter_start, "mode": "force_start"})
+    await COLLECTOR.update_status(cp_id, {"status": "Charging"})
+    await COLLECTOR.record_action(cp_id, "ForceStart", {"connector_id": connector_id, "meter_start": meter_start, "transaction_id": transaction_id})
+    return JSONResponse({"result": "sent", "response_status": "Accepted", "cp_id": cp_id, "action": "ForceStart", "transaction_id": transaction_id})
+
+
+@app.post("/api/cp/{cp_id}/force_stop")
+async def force_stop(cp_id: str, request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    transaction_id = normalize_transaction_id(payload.get("transaction_id"))
+    if transaction_id is None:
+        open_tx = await COLLECTOR.get_open_transaction(cp_id)
+        transaction_id = (open_tx or {}).get("transaction_id")
+
+    await COLLECTOR.stop_transaction(cp_id, {"transaction_id": transaction_id, "meter_stop": payload.get("meter_stop"), "mode": "force_stop"})
+    await COLLECTOR.update_status(cp_id, {"status": "Available"})
+    await COLLECTOR.record_action(cp_id, "ForceStop", {"transaction_id": transaction_id, "meter_stop": payload.get("meter_stop")})
+    return JSONResponse({"result": "sent", "response_status": "Accepted", "cp_id": cp_id, "action": "ForceStop", "transaction_id": transaction_id})
+
+
+@app.post("/api/cp/{cp_id}/remote_start")
+async def remote_start(cp_id: str, request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    connector_id = int(payload.get("connector_id") or 1)
+    id_tag = str(payload.get("id_tag") or f"REMOTE_{cp_id}")
+    transaction_id = await COLLECTOR.start_transaction(cp_id, {"connector_id": connector_id, "id_tag": id_tag, "mode": "remote_start"})
+    await COLLECTOR.update_status(cp_id, {"status": "Charging"})
+    await COLLECTOR.record_action(cp_id, "RemoteStartTransaction", {"connector_id": connector_id, "id_tag": id_tag, "transaction_id": transaction_id})
+    return JSONResponse({"result": "sent", "response_status": "Accepted", "cp_id": cp_id, "action": "RemoteStartTransaction", "transaction_id": transaction_id})
+
+
+@app.post("/api/cp/{cp_id}/remote_stop")
+async def remote_stop(cp_id: str, request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    transaction_id = normalize_transaction_id(payload.get("transaction_id"))
+    if transaction_id is None:
+        open_tx = await COLLECTOR.get_open_transaction(cp_id)
+        transaction_id = (open_tx or {}).get("transaction_id")
+
+    await COLLECTOR.stop_transaction(cp_id, {"transaction_id": transaction_id, "mode": "remote_stop"})
+    await COLLECTOR.update_status(cp_id, {"status": "Available"})
+    await COLLECTOR.record_action(cp_id, "RemoteStopTransaction", {"transaction_id": transaction_id})
+    return JSONResponse({"result": "sent", "response_status": "Accepted", "cp_id": cp_id, "action": "RemoteStopTransaction", "transaction_id": transaction_id})
+
+
+@app.post("/api/cp/{cp_id}/remote_reboot")
+async def remote_reboot(cp_id: str, request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    reset_type = str(payload.get("reset_type") or "Soft")
+    metadata = update_metadata_store(cp_id, {"rebootLogs": list(read_meta().get(cp_id, {}).get("rebootLogs", [])) + [{"timestamp": utc_now_iso(), "reset_type": reset_type}]})
+    await COLLECTOR.record_action(cp_id, "Reset", {"reset_type": reset_type})
+    await COLLECTOR.update_status(cp_id, {"status": "Available"})
+    return JSONResponse({"result": "sent", "response_status": "Accepted", "cp_id": cp_id, "action": "Reset", "reset_type": reset_type, "metadata": metadata})
+
+
+@app.post("/api/cp/{cp_id}/unlock_connector")
+async def unlock_connector(cp_id: str, request: Request):
+    require_role(request, SUPERVISION_ROLES)
+    payload = await read_request_payload(request)
+    connector_id = int(payload.get("connector_id") or 1)
+    await COLLECTOR.record_action(cp_id, "UnlockConnector", {"connector_id": connector_id})
+    return JSONResponse({"result": "sent", "response_status": "Accepted", "cp_id": cp_id, "action": "UnlockConnector", "connector_id": connector_id})
 
 
 
