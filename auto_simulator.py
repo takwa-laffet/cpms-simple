@@ -70,13 +70,22 @@ class AutoChargePointSimulator:
         self.ws_url = ws_url.rstrip("/")
         self.ws = None
         self.running = False
-        self.heartbeat_interval = 30
+        self.heartbeat_interval = 10  # Changed from 30 to 10 seconds
         self.meter_start = 0
         self.transaction_id = None
         self.id_tag = f"SIM_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         self.connector_id = 1
         self._tasks = []
         self.collector = collector
+        # Enhanced device information
+        self.device_info = {
+            "charge_point_model": "CP_TEST_001",
+            "charge_point_vendor": "TestVendor",
+            "firmware_version": "1.0.0",
+            "serial_number": "CP_TEST_001_SN_001",
+            "meter_type": "Electronic",
+            "meter_serial_number": "CP_TEST_001_MSN_001"
+        }
 
     async def connect(self):
         if not OCPP_AVAILABLE:
@@ -96,7 +105,11 @@ class AutoChargePointSimulator:
             return False
 
     async def send_boot_notification(self):
-        payload = {"charge_point_model": "Auto-Sim", "charge_point_vendor": "CityOs", "firmware_version": "1.0"}
+        payload = {
+            "charge_point_model": self.device_info["charge_point_model"],
+            "charge_point_vendor": self.device_info["charge_point_vendor"],
+            "firmware_version": self.device_info["firmware_version"]
+        }
         await _send_ocpp_message(self.cp_id, "BootNotification", payload)
         # Update boot notification in collector
         if self.collector is not None:
@@ -157,8 +170,13 @@ class AutoChargePointSimulator:
         self.running = True
         await self.connect()
         await self.send_boot_notification()
+        # Start with Preparing status, then change to Available after 3 minutes
+        await self.send_status_notification("Preparing")
+        LOGGER.info(f"[{self.cp_id}] Starting in Preparing state, will go Available in 3 minutes")
+        await asyncio.sleep(180)  # Wait 3 minutes (180 seconds)
+        if self.running:  # Check if still running after sleep
+            await self.send_status_notification("Available")
         asyncio.create_task(self.send_heartbeat())
-        await self.send_status_notification("Available")
         while self.running:
             await asyncio.sleep(5)
             if self.running:

@@ -195,20 +195,20 @@
                 <section class="admin-card" id="user-card" data-role="admin">
                   <div class="panel-head slim">
                     <h4>Users</h4>
-                    <span class="note">Admin, STEG, and operator accounts</span>
+                     <span class="note">Admin, institution, and operator accounts</span>
                   </div>
 
                   <form id="user-form" class="admin-form">
                     <label>Email <input name="email" type="email" placeholder="operator@rback.local" required /></label>
                     <label>Name <input name="name" type="text" placeholder="Operator" /></label>
                     <label>Password <input name="password" type="password" placeholder="Create password" required /></label>
-                    <label>Role
-                      <select name="role">
-                        <option value="operator">operator</option>
-                        <option value="steg">STEG</option>
-                        <option value="admin">admin</option>
-                      </select>
-                    </label>
+                     <label>Role
+                       <select name="role">
+                         <option value="operator">operator</option>
+                         <option value="institution">institution</option>
+                         <option value="admin">admin</option>
+                       </select>
+                     </label>
                     <button class="btn btn-primary" type="submit">Create User</button>
                   </form>
 

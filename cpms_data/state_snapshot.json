@@ -1,25 +1,40 @@
 {
-  "generated_at": "2026-05-23T11:41:46.936675+00:00",
-  "server_started_at": "2026-05-23T11:38:50.508680+00:00",
+  "generated_at": "2026-05-25T09:19:41.302760+00:00",
+  "server_started_at": "2026-05-25T09:11:39.629624+00:00",
   "metrics": {
     "total_connections": 0,
     "active_connections": 0,
-    "total_messages": 3
+    "total_messages": 1
   },
   "message_count_by_action": {
-    "SimulationStart": 2,
-    "Simulation_Heartbeat": 1
+    "SimulationStart": 1
   },
   "message_count_by_cp": {
-    "SYSTEM": 2,
-    "CP_TEST_001": 1
+    "SYSTEM": 1
   },
   "last_seen": {
-    "SYSTEM": "2026-05-23T11:40:55.758309+00:00",
-    "CP_TEST_001": "2026-05-23T11:41:46.935794+00:00"
+    "SYSTEM": "2026-05-25T09:14:44.381574+00:00"
   },
-  "status_by_cp": {},
+  "status_by_cp": {
+    "CP_TEST_001": {
+      "timestamp": "2026-05-25T09:19:41.299788+00:00",
+      "status": "Charging"
+    }
+  },
   "last_meter_values_by_cp": {},
-  "boot_notifications_by_cp": {},
-  "open_transactions_by_cp": {}
+  "boot_notifications_by_cp": {
+    "CP_TEST_001": {
+      "timestamp": "2026-05-25T09:14:46.430491+00:00",
+      "charge_point_model": "CP_TEST_001",
+      "charge_point_vendor": "TestVendor",
+      "firmware_version": "1.0.0"
+    }
+  },
+  "open_transactions_by_cp": {
+    "CP_TEST_001": {
+      "transaction_id": 10,
+      "opened_at": "2026-05-25T09:19:41.302746+00:00",
+      "id_tag": "SIM_20260525101444"
+    }
+  }
 }

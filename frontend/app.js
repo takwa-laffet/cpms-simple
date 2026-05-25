@@ -89,7 +89,7 @@ function formatMoney(value, currency = 'dt') {
 }
 
 function isManagementRole(role) {
-  return ['admin', 'steg'].includes(String(role || '').toLowerCase());
+  return ['admin', 'institution'].includes(String(role || '').toLowerCase());
 }
 
 function getRoleProfile(role) {
@@ -106,17 +106,17 @@ function getRoleProfile(role) {
     };
   }
 
-  if (normalizedRole === 'steg') {
-    return {
-      role: 'steg',
-      label: 'Supervision',
-      description: 'Supervision access: monitoring, remote control, charge-point data, billing, and tariff updates.',
-      canManageChargePoints: true,
-      canEditTariff: true,
-      canManageUsers: false,
-      canSeeBilling: true,
-    };
-  }
+   if (normalizedRole === 'institution') {
+     return {
+       role: 'institution',
+       label: 'Supervision',
+       description: 'Supervision access: monitoring, remote control, charge-point data, billing, and tariff updates.',
+       canManageChargePoints: true,
+       canEditTariff: true,
+       canManageUsers: false,
+       canSeeBilling: true,
+     };
+   }
 
   return {
     role: 'operator',
@@ -144,18 +144,18 @@ function setChargePointFormMode(profile) {
   const note = document.querySelector('#charge-point-card .note');
   const submitButton = els.chargePointForm.querySelector('button[type="submit"]');
 
-  if (profile.role === 'steg') {
-    if (title) title.textContent = 'Update Tariff';
-    if (note) note.textContent = 'Read-only charge-point supervision. Only tariff changes are allowed.';
-    setFieldVisibility(els.chargePointForm, 'cp_id', true);
-    setFieldVisibility(els.chargePointForm, 'tariff_per_kwh', true);
-    setFieldVisibility(els.chargePointForm, 'label', false);
-    setFieldVisibility(els.chargePointForm, 'site', false);
-    setFieldVisibility(els.chargePointForm, 'connector_count', false);
-    setFieldVisibility(els.chargePointForm, 'notes', false);
-    if (submitButton) submitButton.textContent = 'Update Tariff';
-    return;
-  }
+   if (profile.role === 'institution') {
+     if (title) title.textContent = 'Update Tariff';
+     if (note) note.textContent = 'Read-only charge-point supervision. Only tariff changes are allowed.';
+     setFieldVisibility(els.chargePointForm, 'cp_id', true);
+     setFieldVisibility(els.chargePointForm, 'tariff_per_kwh', true);
+     setFieldVisibility(els.chargePointForm, 'label', false);
+     setFieldVisibility(els.chargePointForm, 'site', false);
+     setFieldVisibility(els.chargePointForm, 'connector_count', false);
+     setFieldVisibility(els.chargePointForm, 'notes', false);
+     if (submitButton) submitButton.textContent = 'Update Tariff';
+     return;
+   }
 
   if (title) title.textContent = 'Register Charge Point';
   if (note) note.textContent = 'Adds offline or upcoming chargers to the fleet';
@@ -194,9 +194,9 @@ function setCurrentUser(user) {
   state.currentUser = user || null;
   const profile = getRoleProfile(state.currentUser?.role);
 
-  document.body.classList.toggle('admin-user', profile.role === 'admin');
-  document.body.classList.toggle('operator-user', profile.role === 'operator');
-  document.body.classList.toggle('steg-user', profile.role === 'steg');
+   document.body.classList.toggle('admin-user', profile.role === 'admin');
+   document.body.classList.toggle('operator-user', profile.role === 'operator');
+   document.body.classList.toggle('institution-user', profile.role === 'institution');
 
   if (els.roleBadge) {
     els.roleBadge.textContent = profile.label;
@@ -599,7 +599,7 @@ function renderAdministration(data) {
       (user) => `
         <div class="entity-item-head">
           <strong>${formatValue(user.email)}</strong>
-          <span class="badge ${isManagementRole(user.role) ? 'badge-warning' : 'badge-neutral'}">${user.role === 'steg' ? 'STEG' : formatValue(user.role)}</span>
+           <span class="badge ${isManagementRole(user.role) ? 'badge-warning' : 'badge-neutral'}">${user.role === 'institution' ? 'INSTITUTION' : formatValue(user.role)}</span>
         </div>
         <p class="entity-item-body">${formatValue(user.name || user.email)} · ${user.active ? 'Active' : 'Disabled'}</p>
       `,
@@ -615,7 +615,7 @@ function renderAdministration(data) {
     ['Estimated Revenue', billing.estimated_revenue !== undefined ? formatMoney(billing.estimated_revenue, billing.currency || 'dt') : '—'],
   ]);
 
-  if (profile.role === 'steg') {
+   if (profile.role === 'institution') {
     const billingTitle = document.querySelector('#billing-card .panel-head h3');
     const billingNote = document.querySelector('#billing-card .panel-head .note');
     if (billingTitle) billingTitle.textContent = 'Supervision';
@@ -727,10 +727,10 @@ function wireAdministrationForms() {
       };
 
       try {
-        const endpoint = profile.role === 'steg'
+         const endpoint = profile.role === 'institution'
           ? `/api/charge-points/${encodeURIComponent(body.cp_id)}/tariff`
           : '/api/charge-points';
-        const requestBody = profile.role === 'steg'
+         const requestBody = profile.role === 'institution'
           ? { tariff_per_kwh: body.tariff_per_kwh }
           : body;
 
@@ -745,7 +745,7 @@ function wireAdministrationForms() {
           throw new Error(payload.detail || 'Unable to save charge point');
         }
         els.chargePointForm.reset();
-        showToast(profile.role === 'steg'
+         showToast(profile.role === 'institution'
           ? `Tariff updated for ${payload.charge_point.cp_id}`
           : `Charge point ${payload.charge_point.cp_id} saved`, 'success');
         await loadData();

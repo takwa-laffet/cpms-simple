@@ -68,7 +68,7 @@ AUTH_PASSWORD = os.environ.get("CPMS_LOGIN_PASSWORD", "Cpms_Secure#48Tz@2026")
 AUTH_SECRET_KEY = os.environ.get("AUTH_SECRET_KEY", "cityos-dev-secret")
 AUTH_SESSION_TTL_SECONDS = int(os.environ.get("AUTH_SESSION_TTL_SECONDS", "86400"))
 BILLING_TARIFF_PER_KWH = float(os.environ.get("CITYOS_TARIFF_PER_KWH", "0.35"))
-SUPERVISION_ROLES = {"admin", "steg"}
+SUPERVISION_ROLES = {"admin", "institution"}
 FULL_MANAGEMENT_ROLES = {"admin"}
 USER_MANAGEMENT_ROLES = {"admin"}
 
