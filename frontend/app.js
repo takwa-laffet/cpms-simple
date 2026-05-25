@@ -195,47 +195,16 @@ function setAuthenticated(isAuthenticated) {
 }
 
 function setCurrentUser(user) {
-   state.currentUser = user || null;
-   const profile = getRoleProfile(state.currentUser?.role);
+  state.currentUser = user || null;
+  const profile = getRoleProfile(state.currentUser?.role);
 
-   document.body.classList.toggle('admin-user', profile.role === 'admin');
-   document.body.classList.toggle('operator-user', profile.role === 'operator');
-   document.body.classList.toggle('institution-user', profile.role === 'institution');
+  document.body.classList.toggle('admin-user', profile.role === 'admin');
+  document.body.classList.toggle('operator-user', profile.role === 'operator');
+  document.body.classList.toggle('institution-user', profile.role === 'institution');
 
-   if (els.roleBadge) {
-     els.roleBadge.textContent = profile.label;
-   }
-
-   if (els.roleDescription) {
-     els.roleDescription.textContent = profile.description;
-   }
-
-   if (els.administrationPanel) {
-     els.administrationPanel.hidden = !profile.canManageChargePoints && !profile.canManageUsers;
-   }
-
-   if (els.billingPanel) {
-     els.billingPanel.hidden = !profile.canSeeBilling;
-   }
-
-   if (els.chargePointForm) {
-     els.chargePointForm.hidden = !profile.canManageChargePoints;
-     setChargePointFormMode(profile);
-   }
-
-   if (els.userForm) {
-     els.userForm.hidden = !profile.canManageUsers;
-   }
-
-   if (els.userList) {
-     els.userList.hidden = !profile.canManageUsers;
-   }
-
-   // Hide command grid for institution role (no remote commands allowed)
-   if (els.commandGrid) {
-     els.commandGrid.hidden = !profile.canRemoteControl;
-   }
- }
+  if (els.roleBadge) {
+    els.roleBadge.textContent = profile.label;
+  }
 
   if (els.roleDescription) {
     els.roleDescription.textContent = profile.description;
@@ -260,6 +229,11 @@ function setCurrentUser(user) {
 
   if (els.userList) {
     els.userList.hidden = !profile.canManageUsers;
+  }
+
+  // Hide command grid for institution role (no remote commands allowed)
+  if (els.commandGrid) {
+    els.commandGrid.hidden = !profile.canRemoteControl;
   }
 }
 
@@ -357,6 +331,13 @@ async function signOut() {
   state.currentUser = null;
   setCurrentUser(null);
   setAuthenticated(false);
+  // Client-side fallback: clear cookie and force navigation in case server-side delete_cookie is ignored
+  try {
+    document.cookie = 'cpms_auth=; Max-Age=0; path=/;';
+  } catch (e) {
+    // ignore in non-browser contexts
+  }
+  window.location.href = '/login';
 }
 
 function toTitle(label) {

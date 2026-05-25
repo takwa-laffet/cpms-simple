@@ -5,6 +5,7 @@ import hmac
 import json
 import logging
 import os
+import socket
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -84,6 +85,32 @@ def utc_now_iso() -> str:
 
 def current_unix_timestamp() -> int:
     return int(datetime.now(timezone.utc).timestamp())
+
+
+def is_port_available(host: str, port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind((host, port))
+        except OSError:
+            return False
+    return True
+
+
+def resolve_server_port(preferred_port: int, host: str = "0.0.0.0") -> int:
+    if is_port_available(host, preferred_port):
+        return preferred_port
+
+    for candidate_port in range(preferred_port + 1, preferred_port + 101):
+        if is_port_available(host, candidate_port):
+            LOGGER.warning(
+                "Port %s is busy; falling back to %s. Set PORT or APP_PORT to choose a fixed port.",
+                preferred_port,
+                candidate_port,
+            )
+            return candidate_port
+
+    raise OSError(f"No free port found near {preferred_port}")
 
 
 def env_flag(name: str, default: bool = False) -> bool:
@@ -1454,5 +1481,6 @@ async def cp_data(request: Request):
     return JSONResponse(payload)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "5000"))
+    port = int(os.environ.get("PORT", os.environ.get("APP_PORT", "5000")))
+    port = resolve_server_port(port)
     uvicorn.run("app:app", host="0.0.0.0", port=port, log_level="info")
