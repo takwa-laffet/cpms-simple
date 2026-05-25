@@ -170,6 +170,36 @@ class AutoChargePointSimulator:
         self.running = True
         await self.connect()
         await self.send_boot_notification()
+        # Register charge point and set metadata for complete General Info display
+        if self.collector is not None:
+            # Register the charge point with basic info
+            await self.collector.upsert_charge_point_record({
+                "cp_id": self.cp_id,
+                "label": self.device_info["charge_point_model"],
+                "vendor": self.device_info["charge_point_vendor"],
+                "model": self.device_info["charge_point_model"],
+                "serial_number": self.device_info.get("serial_number", f"{self.cp_id}_SN_001"),
+                "firmware_version": self.device_info["firmware_version"],
+                "site": "Test Site",
+                "connector_count": 1,
+                "tariff_per_kwh": 0.35,  # Default tariff
+            })
+            # Set additional metadata
+            await self.collector.record_action("SYSTEM", "MetadataUpdate", {
+                "cp_id": self.cp_id,
+                "metadata": {
+                    "manufacturer": self.device_info["charge_point_vendor"],
+                    "model": self.device_info["charge_point_model"],
+                    "serialNumber": self.device_info.get("serial_number", f"{self.cp_id}_SN_001"),
+                    "firmwareVersion": self.device_info["firmware_version"],
+                    "ipAddress": "192.168.1.100",
+                    "iccid": "8930000000000000000",
+                    "imsi": "208000000000000",
+                    "commissioningDate": "2026-01-15",
+                    "uptime": "0 days 00:00:00",  # Will be updated dynamically
+                }
+            })
+        LOGGER.info(f"[{self.cp_id}] Registered charge point and set metadata")
         # Start with Preparing status, then change to Available after 3 minutes
         await self.send_status_notification("Preparing")
         LOGGER.info(f"[{self.cp_id}] Starting in Preparing state, will go Available in 3 minutes")

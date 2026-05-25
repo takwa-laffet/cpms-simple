@@ -8,42 +8,43 @@ const state = {
 };
 
 const els = {
-  loginScreen: document.getElementById('login-screen'),
-  appShell: document.getElementById('app-shell'),
-  loginForm: document.getElementById('login-form'),
-  loginEmail: document.getElementById('login-email'),
-  loginPassword: document.getElementById('login-password'),
-  loginError: document.getElementById('login-error'),
-  logoutBtn: document.getElementById('logout-btn'),
-  refreshBtn: document.getElementById('refresh-btn'),
-  globalStatus: document.getElementById('global-status'),
-  globalStatusText: document.getElementById('global-status-text'),
-  selectedCpLabel: document.getElementById('selected-cp-label'),
-  fleetCount: document.getElementById('fleet-count'),
-  cpList: document.getElementById('cp-list'),
-  detailTitle: document.getElementById('detail-title'),
-  detailStatus: document.getElementById('detail-status'),
-  generalInfo: document.getElementById('general-info'),
-  liveState: document.getElementById('live-state'),
-  sessionList: document.getElementById('session-list'),
-  eventList: document.getElementById('event-list'),
-  toast: document.getElementById('toast'),
-  metricActiveConnections: document.getElementById('metric-active-connections'),
-  metricTotalMessages: document.getElementById('metric-total-messages'),
-  metricTotalEnergy: document.getElementById('metric-total-energy'),
-  metricOpenTransactions: document.getElementById('metric-open-transactions'),
-  metricRegisteredCps: document.getElementById('metric-registered-cps'),
-  metricEstimatedRevenue: document.getElementById('metric-estimated-revenue'),
-  roleBadge: document.getElementById('role-badge'),
-  roleDescription: document.getElementById('role-description'),
-  administrationPanel: document.getElementById('charge-point-card')?.closest('.card.full-span') || document.querySelector('#charge-point-card')?.parentElement,
-  billingPanel: document.getElementById('billing-card'),
-  registeredCpList: document.getElementById('registered-cp-list'),
-  userList: document.getElementById('user-list'),
-  billingSummary: document.getElementById('billing-summary'),
-  chargePointForm: document.getElementById('charge-point-form'),
-  userForm: document.getElementById('user-form'),
-  adminCards: document.querySelectorAll('.admin-card'),
+   loginScreen: document.getElementById('login-screen'),
+   appShell: document.getElementById('app-shell'),
+   loginForm: document.getElementById('login-form'),
+   loginEmail: document.getElementById('login-email'),
+   loginPassword: document.getElementById('login-password'),
+   loginError: document.getElementById('login-error'),
+   logoutBtn: document.getElementById('logout-btn'),
+   refreshBtn: document.getElementById('refresh-btn'),
+   globalStatus: document.getElementById('global-status'),
+   globalStatusText: document.getElementById('global-status-text'),
+   selectedCpLabel: document.getElementById('selected-cp-label'),
+   fleetCount: document.getElementById('fleet-count'),
+   cpList: document.getElementById('cp-list'),
+   detailTitle: document.getElementById('detail-title'),
+   detailStatus: document.getElementById('detail-status'),
+   generalInfo: document.getElementById('general-info'),
+   liveState: document.getElementById('live-state'),
+   sessionList: document.getElementById('session-list'),
+   eventList: document.getElementById('event-list'),
+   toast: document.getElementById('toast'),
+   metricActiveConnections: document.getElementById('metric-active-connections'),
+   metricTotalMessages: document.getElementById('metric-total-messages'),
+   metricTotalEnergy: document.getElementById('metric-total-energy'),
+   metricOpenTransactions: document.getElementById('metric-open-transactions'),
+   metricRegisteredCps: document.getElementById('metric-registered-cps'),
+   metricEstimatedRevenue: document.getElementById('metric-estimated-revenue'),
+   roleBadge: document.getElementById('role-badge'),
+   roleDescription: document.getElementById('role-description'),
+   administrationPanel: document.getElementById('charge-point-card')?.closest('.card.full-span') || document.querySelector('#charge-point-card')?.parentElement,
+   billingPanel: document.getElementById('billing-card'),
+   commandGrid: document.getElementById('command-grid'),
+   registeredCpList: document.getElementById('registered-cp-list'),
+   userList: document.getElementById('user-list'),
+   billingSummary: document.getElementById('billing-summary'),
+   chargePointForm: document.getElementById('charge-point-form'),
+   userForm: document.getElementById('user-form'),
+   adminCards: document.querySelectorAll('.admin-card'),
 };
 
 const templates = {
@@ -93,41 +94,44 @@ function isManagementRole(role) {
 }
 
 function getRoleProfile(role) {
-  const normalizedRole = String(role || 'operator').toLowerCase();
-  if (normalizedRole === 'admin') {
-    return {
-      role: 'admin',
-      label: 'Admin',
-      description: 'Full access: monitoring, remote control, charge-point management, billing, and users.',
-      canManageChargePoints: true,
-      canEditTariff: true,
-      canManageUsers: true,
-      canSeeBilling: true,
-    };
-  }
+   const normalizedRole = String(role || 'operator').toLowerCase();
+   if (normalizedRole === 'admin') {
+     return {
+       role: 'admin',
+       label: 'Admin',
+       description: 'Full access: monitoring, remote control, charge-point management, billing, and users.',
+       canManageChargePoints: true,
+       canEditTariff: true,
+       canManageUsers: true,
+       canSeeBilling: true,
+       canRemoteControl: true,
+     };
+   }
 
    if (normalizedRole === 'institution') {
      return {
        role: 'institution',
        label: 'Supervision',
-       description: 'Supervision access: monitoring, remote control, charge-point data, billing, and tariff updates.',
+       description: 'Supervision access: monitoring, charge-point data, billing, and tariff updates. (No remote commands)',
        canManageChargePoints: true,
        canEditTariff: true,
        canManageUsers: false,
        canSeeBilling: true,
+       canRemoteControl: false,
      };
    }
 
-  return {
-    role: 'operator',
-    label: 'Operator',
-    description: 'Operations access: live monitoring and remote commands only.',
-    canManageChargePoints: false,
-    canEditTariff: false,
-    canManageUsers: false,
-    canSeeBilling: false,
-  };
-}
+   return {
+     role: 'operator',
+     label: 'Operator',
+     description: 'Operations access: live monitoring and remote commands only.',
+     canManageChargePoints: false,
+     canEditTariff: false,
+     canManageUsers: false,
+     canSeeBilling: false,
+     canRemoteControl: true,
+   };
+ }
 
 function setFieldVisibility(form, fieldName, visible) {
   if (!form) return;
@@ -191,16 +195,47 @@ function setAuthenticated(isAuthenticated) {
 }
 
 function setCurrentUser(user) {
-  state.currentUser = user || null;
-  const profile = getRoleProfile(state.currentUser?.role);
+   state.currentUser = user || null;
+   const profile = getRoleProfile(state.currentUser?.role);
 
    document.body.classList.toggle('admin-user', profile.role === 'admin');
    document.body.classList.toggle('operator-user', profile.role === 'operator');
    document.body.classList.toggle('institution-user', profile.role === 'institution');
 
-  if (els.roleBadge) {
-    els.roleBadge.textContent = profile.label;
-  }
+   if (els.roleBadge) {
+     els.roleBadge.textContent = profile.label;
+   }
+
+   if (els.roleDescription) {
+     els.roleDescription.textContent = profile.description;
+   }
+
+   if (els.administrationPanel) {
+     els.administrationPanel.hidden = !profile.canManageChargePoints && !profile.canManageUsers;
+   }
+
+   if (els.billingPanel) {
+     els.billingPanel.hidden = !profile.canSeeBilling;
+   }
+
+   if (els.chargePointForm) {
+     els.chargePointForm.hidden = !profile.canManageChargePoints;
+     setChargePointFormMode(profile);
+   }
+
+   if (els.userForm) {
+     els.userForm.hidden = !profile.canManageUsers;
+   }
+
+   if (els.userList) {
+     els.userList.hidden = !profile.canManageUsers;
+   }
+
+   // Hide command grid for institution role (no remote commands allowed)
+   if (els.commandGrid) {
+     els.commandGrid.hidden = !profile.canRemoteControl;
+   }
+ }
 
   if (els.roleDescription) {
     els.roleDescription.textContent = profile.description;
