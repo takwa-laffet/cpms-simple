@@ -956,5 +956,4384 @@
       "connector_id": 1,
       "energy_wh": 3000
     }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:41:50.665077+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "BootNotification",
+    "payload": {
+      "charge_point_model": "CP_TEST_001",
+      "charge_point_vendor": "TestVendor",
+      "firmware_version": "1.0.0"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:41:50.666569+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:44:50.673966+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:44:50.676179+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:44:55.687014+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:44:56.714510+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:44:56.722392+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:44:56.726612+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:44:58.741431+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:00.683744+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:00.746729+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:02.759717+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 1
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:45:02.766575+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 1
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:02.777872+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:07.790014+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:08.798762+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:08.801584+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:08.806366+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:10.701769+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:10.811146+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:12.819476+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:14.826477+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 2
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:45:14.828339+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 2
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:14.832048+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:19.836476+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:20.713803+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:20.853783+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:20.859991+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:20.864170+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:22.869052+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:24.879192+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:26.882889+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 3
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:45:26.889652+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 3
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:26.891642+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:30.731713+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:31.895772+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:32.910362+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:32.912736+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:32.915308+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:34.922120+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:36.935641+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:38.950626+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 4
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:45:38.956493+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 4
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:38.962591+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:40.741765+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:43.982147+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:44.992180+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:44.993991+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:44.996093+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:47.002565+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:49.019945+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:50.761084+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:51.023455+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 5
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:45:51.025568+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 5
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:51.027540+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:56.043834+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:57.058559+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:57.065115+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:57.069768+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:45:59.081359+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:00.769167+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:01.093115+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:03.099970+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 6
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:46:03.107871+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 6
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:03.109550+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:08.126696+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:09.137811+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:09.147300+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:09.155785+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:10.774549+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:11.178062+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:13.188830+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:15.202766+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 7
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:46:15.206671+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 7
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:15.208976+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:20.213253+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:20.787189+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:21.227922+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:21.241930+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:21.251518+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:23.268094+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:25.275278+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:27.282728+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 8
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:46:27.284190+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 8
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:27.285776+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:30.797753+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:32.295606+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:33.306379+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:33.312383+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:33.314867+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:35.322700+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:37.332791+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:39.354900+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 9
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:46:39.358154+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 9
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:39.359741+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:40.803622+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:44.376794+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:45.389670+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:45.392875+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:45.394587+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:47.400224+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:49.419469+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:50.820640+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:51.434914+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 10
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:46:51.441762+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 10
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:51.443867+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:56.461676+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:57.470590+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:57.477941+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:57.491974+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:46:59.514192+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:00.826358+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:01.526594+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:03.537734+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 11
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:47:03.543895+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 11
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:03.549516+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:08.568581+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:09.579560+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:09.582095+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:09.583682+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:10.843354+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:11.601548+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:13.622720+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:15.639941+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 12
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:47:15.643235+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 12
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:15.645508+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:20.660991+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:20.848134+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:21.676503+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:21.686444+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:21.697681+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:23.716637+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:25.736032+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:27.745874+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 13
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:47:27.753630+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 13
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:27.755349+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:30.862439+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:32.775114+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:33.785530+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:33.792407+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:33.795236+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:35.798008+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:37.814050+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:39.825125+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 14
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:47:39.832177+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 14
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:39.836393+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:40.884575+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:44.842502+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:45.857773+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:45.862386+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:45.867075+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:47.881249+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:49.900034+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:50.899941+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:51.906584+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 15
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:47:51.910266+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 15
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:51.914804+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:56.918964+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:57.930956+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:57.937286+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:57.940711+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:47:59.952803+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:00.920255+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:01.966418+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:03.981134+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 16
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:48:03.983750+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 16
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:03.985574+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:08.997056+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:10.007999+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:10.017931+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:10.025893+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:10.938808+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:12.032734+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:14.055413+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:16.069244+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 17
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:48:16.076239+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 17
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:16.081630+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:20.952924+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:21.092239+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:22.105286+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:22.112307+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:22.113948+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:24.128069+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:26.152669+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:28.170954+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 18
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:48:28.173451+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 18
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:28.175921+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:30.961368+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:33.189465+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:34.201275+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:34.207335+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:34.211499+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:36.225118+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:38.237515+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:40.245641+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 19
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:48:40.248624+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 19
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:40.253050+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:40.978269+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:45.258017+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:46.273017+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:46.284175+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:46.292390+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:48.301733+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:50.314506+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:50.998991+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:52.325463+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 20
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:48:52.332950+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 20
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:52.338199+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:57.350661+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:58.373299+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:58.383615+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:48:58.387563+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:00.397132+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:01.015328+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:02.418476+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:04.443928+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 21
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:49:04.462086+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 21
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:04.474339+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:09.499608+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:10.523026+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:10.560285+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:10.588956+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:11.033246+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:12.608343+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:14.631961+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:16.644437+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 22
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:49:16.653930+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 22
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:16.662052+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:21.043960+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:21.685013+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:22.693167+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:22.702472+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:22.719058+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:24.744777+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:26.774009+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:28.802053+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 23
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:49:28.804362+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 23
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:28.806569+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:31.070921+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:33.814397+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:34.827195+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:34.841324+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:34.848398+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:36.866404+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:38.882419+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:40.904475+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 24
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:49:40.906434+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 24
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:40.908844+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:41.090513+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:45.923606+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:46.928697+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:46.932300+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:46.935366+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:48.937927+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:50.944295+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:51.099542+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:52.952642+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 25
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:49:52.961013+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 25
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:52.968666+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:57.991476+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:59.009095+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:59.014539+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:49:59.017340+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:01.034885+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:01.114028+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:03.044961+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:05.071604+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 26
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:50:05.077716+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 26
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:05.083982+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:10.096838+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:11.107488+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:11.115110+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:11.117029+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:11.123133+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:13.122107+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:15.130771+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:17.135815+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 27
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:50:17.140353+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 27
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:17.143981+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:21.136753+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:22.151651+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:23.160749+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:23.166093+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:23.168043+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:25.183378+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:27.190867+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:29.210899+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 28
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:50:29.222257+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 28
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:29.231239+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:31.140104+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:34.254079+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:35.278395+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:35.309103+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:35.323617+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:37.331916+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:39.354473+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:41.152965+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:41.367420+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 29
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:50:41.383671+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 29
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:41.397791+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:46.423442+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:47.448743+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:47.456116+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:47.465957+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:49.491867+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:51.209520+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:51.520793+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:53.546896+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 30
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:50:53.556527+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 30
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:53.564591+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:58.581997+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:59.611386+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:59.637427+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:50:59.647220+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:01.227706+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:01.660874+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:03.703396+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:05.762947+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 31
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:51:05.791281+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 31
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:05.807110+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:10.817927+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:11.265170+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:11.826670+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:11.839644+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:11.854397+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:13.870129+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:15.891964+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:17.930109+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 32
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:51:17.940760+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 32
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:17.948986+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:21.282124+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:22.963540+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:23.990775+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:24.012559+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:24.023400+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:26.044799+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:28.054921+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:30.081332+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 33
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:51:30.090172+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 33
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:30.096982+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:31.306795+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:35.115756+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:36.142356+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:36.166125+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:36.180574+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:38.197726+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:40.206713+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:41.327868+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:42.226830+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 34
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:51:42.234823+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 34
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:42.249029+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:47.263319+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:48.324313+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:48.353408+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:48.367597+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:50.377942+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:51.373843+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:52.399424+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:54.406529+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 35
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:51:54.417001+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 35
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:54.431657+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:51:59.456060+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:00.518105+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:00.542499+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:00.555429+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:01.394780+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:02.569723+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:04.595513+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:06.617501+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 36
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:52:06.625758+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 36
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:06.634081+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:11.484674+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:11.653962+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:12.677317+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:12.687177+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:12.712172+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:14.728257+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:16.776809+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:18.788753+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 37
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:52:18.800210+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 37
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:18.809213+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:21.502324+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:23.824536+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:24.852593+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:24.864576+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:24.872487+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:26.881013+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:28.907744+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:30.929893+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 38
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:52:30.943234+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 38
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:30.953770+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:31.518361+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:35.972448+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:37.000171+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:37.019009+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:37.034998+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:39.057754+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:41.094879+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:41.534695+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:43.135828+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 39
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:52:43.151490+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 39
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:43.166077+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:48.198664+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:49.223129+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:49.235442+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:49.254248+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:51.270138+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:51.592149+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:53.335460+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:55.357122+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 40
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:52:55.364786+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 40
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:52:55.373907+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:00.394018+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:01.415371+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:01.419356+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:01.422000+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:01.602025+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:03.434406+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:05.454211+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:07.492257+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 41
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:53:07.495346+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 41
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:07.497837+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:11.615306+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:12.502493+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:13.514855+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:13.521398+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:13.524551+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:15.527642+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:17.537057+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:19.556874+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 42
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:53:19.560604+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 42
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:19.564811+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:21.628931+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:24.571461+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:25.584209+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:25.594145+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:25.597397+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:27.608734+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:29.623079+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:31.641481+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:31.651253+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 43
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:53:31.654287+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 43
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:31.657875+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:36.673089+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:37.687784+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:37.691060+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:37.693464+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:39.702867+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:41.665833+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:41.712244+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:43.725498+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 44
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:53:43.730711+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 44
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:43.734383+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:48.746652+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:49.761102+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:49.767321+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:49.771075+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:51.688631+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:51.782847+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:53.789834+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:55.796075+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 45
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:53:55.799616+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 45
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:53:55.802373+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:54:00.811703+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Preparing"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:54:01.700852+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "Heartbeat",
+    "payload": {}
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:54:01.825611+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Charging"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:54:01.830700+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StartTransaction",
+    "payload": {
+      "id_tag": "SIM_20260525104148"
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:54:01.833927+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 1000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:54:03.846958+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 2000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:54:05.855649+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "MeterValues",
+    "payload": {
+      "connector_id": 1,
+      "energy_wh": 3000
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:54:07.859921+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StopTransaction",
+    "payload": {
+      "transaction_id": 46
+    }
+  },
+  {
+    "event_type": "transaction_closed",
+    "timestamp": "2026-05-25T09:54:07.866714+00:00",
+    "cp_id": "CP_TEST_001",
+    "payload": {
+      "transaction_id": 46
+    }
+  },
+  {
+    "event_type": "ocpp_message",
+    "timestamp": "2026-05-25T09:54:07.869558+00:00",
+    "cp_id": "CP_TEST_001",
+    "action": "StatusNotification",
+    "payload": {
+      "connector_id": 1,
+      "status": "Available"
+    }
   }
 ]

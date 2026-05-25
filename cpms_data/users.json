@@ -13,7 +13,7 @@
       "email": "institution-0b1e72c1@rback.local",
       "password_hash": "552f80c16f2d60a7494334f9f90e5db4e8229adc671e068fe6b6e1f875596249",
       "role": "institution",
-      "name": "Institution (Société tunisienne de l'électricité et du gaz)",
+      "name": "Institution",
       "active": true,
       "created_at": "2026-05-22T21:44:47.858431+00:00"
     },

@@ -1106,6 +1106,19 @@ class DataCollector:
 
 COLLECTOR = DataCollector()
 app = FastAPI()
+
+
+# Auto-start OCPP simulation for CP_TEST_001 on server startup
+@app.on_event("startup")
+async def startup_event():
+    """Automatically start OCPP simulation for CP_TEST_001 when server starts"""
+    try:
+        from auto_simulator import start_auto_simulator
+        # Start simulation for CP_TEST_001 with default WebSocket URL
+        await start_auto_simulator("CP_TEST_001", "ws://localhost:5000", COLLECTOR)
+        LOGGER.info("Auto-started OCPP simulation for CP_TEST_001")
+    except Exception as e:
+        LOGGER.error(f"Failed to auto-start OCPP simulation: {e}")
 cors_origins = [origin.strip() for origin in os.environ.get("CORS_ORIGINS", "*").split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
